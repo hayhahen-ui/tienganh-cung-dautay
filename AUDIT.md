@@ -1,0 +1,82 @@
+# 🔍 Audit dự án HOCTIENGANH (Owly English v1) → v2
+
+Ngày audit: 17/10/2026 · Phạm vi: 107 file trong `HOCTIENGANH-main.zip` (đọc toàn bộ source, trừ 40 file shadcn/ui mặc định và lockfile).
+
+## 1. Tổng quan kiến trúc v1
+
+| Hạng mục | Nhận xét |
+| --- | --- |
+| Stack | Vite 8 + React 19 + TanStack Router (file-based) + Tailwind 4 + shadcn/ui. Thực tế là **SPA thuần** (main.tsx + createRoot) dù README/HUONG-DAN ghi "TanStack Start SSR". |
+| Nội dung | 1 file `curriculum.ts` 2 028 dòng: 12 bài học (5 Starters / 4 Movers / 3 Flyers), dữ liệu Cambridge (cấu trúc đề, grammar list, wordlist theo chủ đề, picture-book topics, can-do), link tải, giáo trình, kênh YouTube. |
+| Tính năng | Từ vựng flip-card + TTS, video YouTube, ngữ pháp, đoạn văn tô màu S-V-O-A, nghe/nói/viết, chatbot RAG (BM25 + trigram + RRF) có fallback LLM qua proxy Qwen. |
+| Chất lượng | Build pass, nhưng `tsc --noEmit` **9 lỗi**; không có test; không có theo dõi tiến độ; không có game/quiz. |
+
+## 2. Lỗi & vấn đề đã phát hiện (và trạng thái ở v2)
+
+### 2.1 Bảo mật / an toàn trẻ em
+| # | Vấn đề | File | v2 |
+| --- | --- | --- | --- |
+| S1 | `RichText` dùng `dangerouslySetInnerHTML` không escape → LLM hoặc câu bé gõ có thể chèn HTML/script (XSS). | AskOwly.tsx L372 | ✅ Thay bằng renderer React node (không innerHTML). |
+| S2 | Không giới hạn độ dài input chat, không `aria-label`. | AskOwly.tsx | ✅ `maxLength=200`, thêm aria-label. |
+| S3 | Serverless đọc API key từ biến `mrbit1` (tên cá nhân) — khó bảo trì. | api/ask-owly.js | ⚠️ Giữ nguyên để không gãy deploy hiện tại, nên đổi sang `OWLY_LLM_API_KEY`. |
+| S4 | Chưa có lọc từ ngữ không phù hợp cho input/LLM output. | — | ⏳ Đề xuất backlog. |
+
+### 2.2 Lỗi logic / code
+| # | Vấn đề | File | v2 |
+| --- | --- | --- | --- |
+| B1 | Ternary chết: `corrective ? "🤖 X" : "🤖 X"` — câu trả lời RAG luôn bị LLM ghi đè. | AskOwly.tsx L133 | ✅ RAG tự tin → giữ RAG + nối giải thích AI; RAG fail → dùng AI. |
+| B2 | `sort(() => Math.random() - 0.5)` — xáo trộn thiên lệch. | AskOwly.tsx L444 | ✅ Fisher–Yates (`lib/random.ts`). |
+| B3 | Ký tự Trung Quốc rò vào chip gợi ý: `"Animals有哪些?"`. | rag/knowledge.ts L362 | ✅ Sửa. |
+| B4 | `speakText` tiếng Anh lệch với bubble tiếng Việt (3 chỗ). | AskOwly, answerer.ts | ✅ Sửa. |
+| B5 | 9 lỗi TypeScript: `env.VITE_*` vi phạm `noPropertyAccessFromIndexSignature`; `start.ts`/`server.ts` import `@tanstack/react-start` **không có trong package.json**. | vite.config.ts, src/start.ts, src/server.ts | ✅ Xóa 3 file SSR chết, sửa truy cập env. `tsc` sạch. |
+| B6 | File trùng lặp: `llm-proxy-plugin.ts` là bản copy của plugin trong vite.config.ts; `router.tsx` không dùng; `lovable-error-reporting.ts`, `error-capture.ts`, `error-page.ts` chỉ phục vụ Lovable editor. | src/lib | ✅ Xóa. |
+| B7 | `ListenPractice` cho chọn lại đáp án vô hạn → không chấm điểm được; đáp án đúng thường đứng đầu `options`. | practice/ListenPractice.tsx | ✅ Chỉ tính lần chọn đầu, xáo trộn options theo seed. |
+| B8 | "Bài tiếp theo" dựa vào `order + 1` toàn cục → gãy khi thêm bài. | bai-hoc.$slug.tsx | ✅ Dựa vào index trong mảng đã sort; `order` được đánh lại tự động. |
+| B9 | Link Cambridge lẫn `Images/` và `images/` (CDN phân biệt hoa thường). | curriculum.ts | ✅ Chuẩn hóa `Images/`. |
+| B10 | Script `push-to-github.bat` dùng `git push --force` lên 2 repo, đường dẫn máy cá nhân `E:\AI\...`. | root | ✅ Loại khỏi v2 (nguy hiểm, không liên quan). |
+
+### 2.3 Nội dung / sư phạm
+| # | Vấn đề | v2 |
+| --- | --- | --- |
+| C1 | Bài *Colours & Numbers* hứa "8 màu, đếm 1–20" nhưng chỉ có 6 màu + 2 số. | ✅ Thêm pink, brown, three, ten; sửa summary. |
+| C2 | Bài *My Body* dạy/kiểm tra `feet`, `teeth` nhưng vocab không có. | ✅ Thêm 2 từ. |
+| C3 | Phân bố ngược: Starters 5 bài, Movers 4, Flyers 3 trong khi Flyers cần nhiều thời gian nhất. Tổng 12 bài quá ít so với mục tiêu 500–2 200 từ. | ✅ Thêm 12 bài → **24 bài (9/8/7)**, mỗi bài mới 10 từ, 4 nghe, 4 nói, 4 viết. |
+| C4 | Mỗi bài chỉ 3 câu nghe/nói/viết, không có game, không quiz, không ôn tập → khó giữ động lực lứa 8–12. | ✅ 3 game + quiz 10 câu + flashcard SRS + XP/sao/streak/huy hiệu. |
+| C5 | Không có đánh giá đầu vào → bé 11 tuổi cũng bắt đầu từ Starters bài 1. | ✅ Trang `/kiem-tra` 15 câu, xếp cấp + gợi ý bài đầu tiên. |
+| C6 | Role tagging trong đoạn văn gán nhầm bổ ngữ (`red`, `worried`, `Mai`) thành "object". | ⚠️ Giữ (nhãn hiển thị là "Tân ngữ / bổ ngữ" nên vẫn đúng với bé); backlog thêm role `complement`. |
+| C7 | Lỗi chính tả tiếng Việt "ngưới" (4 chỗ). | ✅ Sửa. |
+| C8 | Định vị "6–12 tuổi" nhưng không có phonics/pre-reading cho bé 6–7. | ✅ Định vị lại **8–12 tuổi** (đúng với Starters→Flyers; bé 8 tuổi đã đọc được). |
+
+### 2.4 RAG / chatbot
+- `listenChunks` nhúng đáp án vào chunk → bé hỏi là lộ đáp án (⚠️ backlog).
+- `grade()` ngưỡng cứng `0.008`, chỉ xem top-1 (⚠️ backlog: dùng khoảng cách top1–top2).
+- Probe LLM khi mount gửi câu "hi" tốn quota (⚠️ backlog: dùng GET health-check đã có sẵn ở `api/ask-owly.js`).
+- Knowledge base tự động index các bài mới → chatbot v2 trả lời được cả 24 bài.
+
+## 3. Những gì v2 bổ sung
+
+| Tính năng | File |
+| --- | --- |
+| Progress store (localStorage, sync tab): XP, streak, sao, huy hiệu, SRS SM-2 rút gọn, nhật ký ngày | `src/lib/progress.ts` |
+| Trang bài học 9 phần có checklist tiến độ, nút "đã xong", mở khóa quiz | `src/routes/bai-hoc.$slug.tsx` |
+| Game ghép hình–từ · điền chỗ trống (sinh từ ví dụ ngữ pháp + đoạn đọc) · xếp từ thành câu | `src/components/games/` |
+| Quiz 10 câu trộn 5 dạng, seed ổn định, 0–3 sao | `games/LessonQuiz.tsx` |
+| Ôn tập flashcard theo lịch nhắc lại ngắt quãng | `src/routes/on-tap.tsx` |
+| Kiểm tra đầu vào 15 câu, xếp cấp Starters/Movers/Flyers | `src/routes/kiem-tra.tsx` |
+| Dashboard tiến độ + báo cáo tuần cho ba mẹ + đổi tên/avatar + reset | `src/routes/tien-do.tsx` |
+| Nav hiển thị XP · streak · số từ đến hạn | `components/SiteNav.tsx` |
+| 12 bài học mới, mọi video đã verify qua YouTube oEmbed | `src/data/lessons/*-2.ts` |
+| PWA manifest, `lang="vi"`, hiệu ứng confetti tôn trọng `prefers-reduced-motion` | `public/`, `styles.css` |
+
+## 4. Kiểm chứng
+- `tsc --noEmit`: 0 lỗi · `eslint .`: 0 lỗi (9 warning react-refresh của shadcn mặc định) · `vite build`: OK (483 kB JS / 152 kB gzip).
+- Smoke test Chromium headless: 11 route render đúng; luồng học → XP cộng đúng (4 phần = 40 XP, nghe 4/4 = +20, game +15), từ vào hộp ôn tập (10 từ), kiểm tra đầu vào xếp cấp thành công, **0 lỗi console**.
+- 27 video v1 + 33 video mới: tất cả HTTP 200 qua oEmbed.
+
+## 5. Backlog đề xuất (ưu tiên giảm dần)
+1. Tài khoản + đồng bộ cloud (Supabase) để học nhiều thiết bị; chế độ nhiều bé trong 1 nhà.
+2. Lọc nội dung (profanity) cho chat + rate-limit `/api/ask-owly`; đổi tên biến env.
+3. Audio thu sẵn (Azure/ElevenLabs) thay Web Speech cho giọng đồng nhất mọi thiết bị.
+4. Đề thi thử Starters/Movers/Flyers theo đúng format từng Part (dữ liệu `examStructures` đã có).
+5. Thêm 6–12 bài nữa để phủ hết 18 chủ đề wordlist; thêm phần Speaking Part 1–4 mô phỏng.
+6. Unit test cho `progress.ts`, `buildQuiz`, `buildBlankQuestions`; e2e Playwright.
