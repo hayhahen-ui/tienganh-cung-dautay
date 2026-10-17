@@ -1,93 +1,138 @@
 /**
- * Vercel Serverless Function — proxy LLM API
- * Keeps API key on the server side.
- * URL: /api/ask-owly
+ * Vercel Serverless Function — proxy LLM cho "Hỏi cô Owly".
+ * Giữ API key ở server. URL: /api/ask-owly
  *
- * Uses the classic Node.js (req, res) signature for maximum compatibility.
+ * Biến môi trường (Vercel → Settings → Environment Variables):
+ *   OWLY_LLM_API_KEY   (bắt buộc để bật AI; không có → app chạy chế độ giáo trình)
+ *   OWLY_LLM_BASE_URL  (tùy chọn; tự suy ra từ dạng key nếu bỏ trống)
+ *   OWLY_LLM_MODEL     (tùy chọn; tự chọn model mặc định theo nhà cung cấp)
+ * Vẫn chấp nhận tên cũ VITE_OWLY_LLM_* để tương thích.
  */
+
+const PROVIDERS = [
+  {
+    test: (k) => k.startsWith("gsk_"),
+    base: "https://api.groq.com/openai/v1",
+    model: "llama-3.3-70b-versatile",
+    name: "groq",
+  },
+  {
+    test: (k) => k.startsWith("sk-or-"),
+    base: "https://openrouter.ai/api/v1",
+    model: "openai/gpt-4o-mini",
+    name: "openrouter",
+  },
+  {
+    test: (k) => k.startsWith("sk-ant-"),
+    base: "https://api.anthropic.com/v1/",
+    model: "claude-3-5-haiku-latest",
+    name: "anthropic",
+  },
+  {
+    test: (k) => k.startsWith("AIza"),
+    base: "https://generativelanguage.googleapis.com/v1beta/openai",
+    model: "gemini-2.0-flash",
+    name: "gemini",
+  },
+  {
+    test: (k) => k.startsWith("sk-"),
+    base: "https://api.openai.com/v1",
+    model: "gpt-4o-mini",
+    name: "openai",
+  },
+  {
+    test: () => true,
+    base: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    model: "qwen-plus",
+    name: "dashscope",
+  },
+];
+
+function config() {
+  const apiKey =
+    process.env.OWLY_LLM_API_KEY || process.env.VITE_OWLY_LLM_API_KEY || process.env.mrbit1 || "";
+  const p = PROVIDERS.find((x) => x.test(apiKey)) || PROVIDERS[PROVIDERS.length - 1];
+  const baseUrl = (
+    process.env.OWLY_LLM_BASE_URL ||
+    process.env.VITE_OWLY_LLM_BASE_URL ||
+    p.base
+  ).replace(/\/$/, "");
+  const model = process.env.OWLY_LLM_MODEL || process.env.VITE_OWLY_LLM_MODEL || p.model;
+  return { apiKey, baseUrl, model, provider: p.name };
+}
+
+const SYSTEM_PROMPT = `Bạn là Cô Owly 🦉, trợ lý dạy tiếng Anh cho trẻ em 8-12 tuổi Việt Nam, theo chuẩn Cambridge YLE (Starters, Movers, Flyers).
+Quy tắc:
+- Trả lời tối đa 80 từ, tiếng Việt đơn giản, kèm từ/câu tiếng Anh trong dấu ngoặc kép, có phiên âm IPA nếu là từ vựng.
+- Ưu tiên dùng ngữ cảnh giáo trình được cung cấp; nếu câu hỏi là tra từ ngoài ngữ cảnh, vẫn trả lời đúng nghĩa tiếng Anh.
+- Không bịa link, không nói về chủ đề ngoài học tiếng Anh; nếu bé hỏi chuyện không phù hợp, nhẹ nhàng hướng về bài học.
+- An toàn cho trẻ em, thân thiện, khích lệ, xưng "cô" và gọi "bé".`;
+
 export default async function handler(req, res) {
-  // Quick health check for GET requests
+  const { apiKey, baseUrl, model, provider } = config();
+
   if (req.method === "GET") {
     return res.status(200).json({
       status: "ok",
-      hasKey:
-        !!process.env.VITE_OWLY_LLM_API_KEY ||
-        !!process.env.mrbit1 ||
-        !!process.env.OWLY_LLM_API_KEY,
+      hasKey: !!apiKey,
+      provider: apiKey ? provider : null,
+      model: apiKey ? model : null,
     });
   }
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-
-  // Accept multiple env var names so the user doesn't need to rename on Vercel
-  const apiKey =
-    process.env.VITE_OWLY_LLM_API_KEY || process.env.mrbit1 || process.env.OWLY_LLM_API_KEY || "";
-  const baseUrl =
-    process.env.VITE_OWLY_LLM_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
-  const model = process.env.VITE_OWLY_LLM_MODEL || "qwen-plus";
-
   if (!apiKey) {
     return res.status(200).json({ mode: "not-configured" });
   }
 
   let body = {};
   try {
-    body = req.body || {};
+    body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
   } catch {
-    // ignore malformed body
+    body = {};
   }
-
-  const systemPrompt = `Bạn là Cô Owly 🦉, trợ lý dạy tiếng Anh cho trẻ em 8-12 tuổi Việt Nam.
-Quy tắc:
-- Trả lời tối đa 80 từ, dùng tiếng Anh đơn giản + giải thích tiếng Việt.
-- KHÔNG bịa thông tin ngoài ngữ cảnh được cung cấp.
-- Nếu không biết, nói thẳng "Cô chưa có thông tin về điều này".
-- An toàn cho trẻ em, thân thiện, khích lệ.
-- Luôn gắn ví dụ tiếng Anh trong dấu ngoặc kép.`;
+  const question = String(body.question || "").slice(0, 300);
+  const context = String(body.context || "").slice(0, 4000);
+  if (!question.trim()) return res.status(200).json({ mode: "error", error: "empty question" });
 
   try {
     const controller = new AbortController();
-    // Vercel serverless functions have a default 10s timeout on the free
-    // plan. Use a shorter internal timeout so we return a graceful error
-    // instead of FUNCTION_INVOCATION_TIMEOUT.
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 8500);
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        ...(provider === "openrouter"
+          ? { "HTTP-Referer": "https://owly-english.app", "X-Title": "Owly English" }
+          : {}),
       },
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
-            content: `Ngữ cảnh từ giáo trình:\n${body.context || ""}\n\nCâu hỏi của bé: ${body.question || ""}`,
+            content: `Ngữ cảnh từ giáo trình:\n${context}\n\nCâu hỏi của bé: ${question}`,
           },
         ],
-        max_tokens: 200,
+        max_tokens: 220,
         temperature: 0.3,
       }),
       signal: controller.signal,
     });
-
     clearTimeout(timeout);
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
-      return res.status(200).json({
-        mode: "error",
-        error: `HTTP ${response.status}: ${errText.slice(0, 150)}`,
-      });
+      return res
+        .status(200)
+        .json({ mode: "error", error: `HTTP ${response.status}: ${errText.slice(0, 150)}` });
     }
-
     const json = await response.json();
     const text = json.choices?.[0]?.message?.content ?? "";
-
     return res.status(200).json({ mode: "llm", text });
   } catch (err) {
     const isAbort = err instanceof Error && err.name === "AbortError";

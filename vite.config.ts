@@ -26,6 +26,20 @@ function llmProxyPlugin(): Plugin {
           return next();
         }
 
+        const devKey = env["OWLY_LLM_API_KEY"] || env["VITE_OWLY_LLM_API_KEY"] || "";
+        if (req.method === "GET") {
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/json");
+          res.end(
+            JSON.stringify({
+              status: "ok",
+              hasKey: Boolean(devKey),
+              provider: devKey ? "custom" : null,
+              model: null,
+            }),
+          );
+          return;
+        }
         if (req.method !== "POST") {
           res.statusCode = 405;
           res.setHeader("Content-Type", "application/json");
@@ -42,9 +56,21 @@ function llmProxyPlugin(): Plugin {
 
           const apiKey = env["OWLY_LLM_API_KEY"] || env["VITE_OWLY_LLM_API_KEY"] || "";
           const baseUrl =
+            env["OWLY_LLM_BASE_URL"] ||
             env["VITE_OWLY_LLM_BASE_URL"] ||
-            "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
-          const model = env["VITE_OWLY_LLM_MODEL"] || "qwen-plus";
+            (apiKey.startsWith("gsk_")
+              ? "https://api.groq.com/openai/v1"
+              : apiKey.startsWith("sk-")
+                ? "https://api.openai.com/v1"
+                : "https://dashscope-intl.aliyuncs.com/compatible-mode/v1");
+          const model =
+            env["OWLY_LLM_MODEL"] ||
+            env["VITE_OWLY_LLM_MODEL"] ||
+            (apiKey.startsWith("gsk_")
+              ? "llama-3.3-70b-versatile"
+              : apiKey.startsWith("sk-")
+                ? "gpt-4o-mini"
+                : "qwen-plus");
 
           if (!apiKey) {
             res.statusCode = 200;

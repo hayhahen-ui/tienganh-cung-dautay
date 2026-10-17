@@ -17,7 +17,7 @@ import {
 import { retrieve } from "@/lib/rag/retriever";
 import { composeAnswer, type Answer } from "@/lib/rag/answerer";
 import { suggestedQuestions } from "@/lib/rag/knowledge";
-import { askLlm } from "@/lib/rag/ask-server";
+import { askLlm, checkLlm } from "@/lib/rag/ask-server";
 import { speak } from "@/lib/speech";
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -74,27 +74,16 @@ export function AskOwly() {
   const inputRef = useRef<HTMLInputElement>(null);
   const nextId = useRef(1);
 
-  // Probe LLM availability on mount
+  // Kiểm tra AI đã cấu hình chưa (GET health-check, không tốn token)
   useEffect(() => {
     let active = true;
-    void askLlm({ data: { question: "hi", context: "greeting" } })
-      .then((res) => {
-        if (!active) return;
-        if (res.mode === "llm") {
-          setLlmStatus("on");
-          setLlmError(null);
-        } else if (res.mode === "not-configured") {
-          setLlmStatus("off");
-        } else if (res.mode === "error") {
-          setLlmStatus("off");
-          setLlmError(res.error);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setLlmStatus("off");
-        setLlmError(err instanceof Error ? err.message : "Connection failed");
-      });
+    void checkLlm().then((h) => {
+      if (!active) return;
+      if (h?.hasKey) {
+        setLlmStatus("on");
+        setLlmError(null);
+      } else setLlmStatus("off");
+    });
     return () => {
       active = false;
     };
@@ -233,10 +222,10 @@ export function AskOwly() {
             }`}
           >
             {llmStatus === "on"
-              ? "🤖 LLM + RAG (Online)"
+              ? "🤖 AI + giáo trình"
               : llmStatus === "checking"
-                ? "⏳ Đang nối AI..."
-                : "🦉 Offline RAG"}
+                ? "⏳ Đang kiểm tra AI…"
+                : "📚 Giáo trình (AI chưa bật)"}
           </span>
         </div>
       </div>

@@ -3,8 +3,9 @@
  * compose local answers by intent detection, or fallback with suggestions.
  */
 import { type RetrievedChunk } from "./retriever";
-import { suggestedQuestions } from "./knowledge";
-import { normalize } from "./text";
+import { suggestedQuestions, faqEntries } from "./knowledge";
+import { normalize, stripVi } from "./text";
+import { lessons, thematicVocabLists, type Vocab } from "@/data/curriculum";
 
 export type AnswerSource = {
   label: string;
@@ -28,14 +29,180 @@ export function grade(results: RetrievedChunk[]): boolean {
   return results[0]!.score >= CONFIDENCE_THRESHOLD;
 }
 
+// ── Tra từ điển trực tiếp (ưu tiên trước RAG) ───────────────────────────
+
+type DictEntry = Vocab & { lessonSlug: string; lessonTitle: string };
+let _dict: DictEntry[] | null = null;
+function dictionary(): DictEntry[] {
+  if (_dict) return _dict;
+  _dict = lessons.flatMap((l) =>
+    l.vocab.map((v) => ({ ...v, lessonSlug: l.slug, lessonTitle: l.title })),
+  );
+  return _dict;
+}
+
+const VI_PATTERNS: RegExp[] = [
+  /^(?:con|cai|cái|quả|qua|củ|cu|chiếc|chiec|màu|mau)?\s*(.+?)\s+(?:trong\s+)?tieng\s+anh\s+(?:la|goi|noi|viet|doc)\s+(?:la\s+)?(?:gi|sao|the nao|nhu the nao)/i,
+  /^(?:tu|chu)?\s*(.+?)\s+(?:nghia|dich)\s+(?:la|sang)?\s*(?:gi|tieng viet|tieng anh)/i,
+  /^(?:dich|translate)\s+(?:tu|chu|cau)?\s*(.+)$/i,
+  /^(?:what is|what's|whats)\s+(.+?)\s+in\s+(?:english|vietnamese)/i,
+  /^(.+?)\s+(?:la|là)\s+gi/i,
+];
+
+function cleanTerm(t: string) {
+  // chỉ bỏ từ đệm rõ ràng; KHÔNG bỏ "ha", "con", "a"… vì có thể là một phần của từ cần tra (hà mã, con mèo)
+  return normalize(t)
+    .replace(/\b(oi|vay|nhe|nha|giup|giúp|minh|mình)\b/g, " ")
+    .replace(/[?!.,"'«»]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Khớp FAQ trực tiếp bằng từ khóa (không bỏ stop-word) — bắt được "cách dùng a an". */
+function matchFaq(query: string): Answer | null {
+  const q = normalize(query);
+  const GENERIC = new Set([
+    "cach",
+    "dung",
+    "la",
+    "gi",
+    "nhu",
+    "the",
+    "nao",
+    "co",
+    "oi",
+    "cho",
+    "minh",
+    "biet",
+    "hoi",
+    "voi",
+    "sao",
+    "khi",
+  ]);
+  const qWords = new Set(q.split(/\s+/).filter((w) => w && !GENERIC.has(w)));
+  let best: { score: number; f: (typeof faqEntries)[number] } | null = null;
+  for (const f of faqEntries) {
+    const kws = new Set(normalize(`${f.q} ${f.kw}`).split(/\s+/).filter(Boolean));
+    let inter = 0;
+    for (const w of qWords) if (kws.has(w)) inter++;
+    const score = inter / Math.max(1, qWords.size);
+    if (inter >= 2 && score >= 0.6 && (!best || score > best.score)) best = { score, f };
+  }
+  if (!best) return null;
+  const speakText = extractEnglish(best.f.a);
+  return {
+    text: `🦉 ${best.f.a}`,
+    sources: [{ label: "Hỏi đáp" }],
+    speakText: speakText || "Let's learn English together!",
+    typingChallenge: speakText.length > 5 ? speakText : undefined,
+    corrective: false,
+  };
+}
+
+/** Nhận diện ý định tra từ; trả về từ cần tra (đã bỏ dấu) hoặc null. */
+export function detectDictionaryQuery(query: string): string | null {
+  const q = normalize(query).replace(/\s+/g, " ").trim();
+  for (const re of VI_PATTERNS) {
+    const m = q.match(re);
+    if (m?.[1]) {
+      const term = cleanTerm(m[1]);
+      if (term.length >= 2 && term.split(" ").length <= 4) return term;
+    }
+  }
+  // Một từ tiếng Anh đơn lẻ, ví dụ "hippo" hoặc "hippo?"
+  if (/^[a-z][a-z' -]{1,20}$/.test(q) && q.split(" ").length <= 2) return q;
+  return null;
+}
+
+function lookup(term: string): DictEntry[] {
+  const t = stripVi(term).toLowerCase();
+  const d = dictionary();
+  const exact = d.filter((e) => {
+    const en = e.word.toLowerCase();
+    const vi = normalize(e.vi)
+      .replace(/\(.*?\)/g, "")
+      .trim();
+    const viCore = vi.replace(/^(con|cai|qua|cu|chiec|mau|so|bàn|ban|hai|nhung|cái|số)\s+/, "");
+    return en === t || vi === t || viCore === t;
+  });
+  if (exact.length) return exact;
+  return d
+    .filter((e) => {
+      const vi = normalize(e.vi);
+      return (
+        vi.split(/[,;(]/)[0]!.trim().split(" ").includes(t) || t.includes(e.word.toLowerCase())
+      );
+    })
+    .slice(0, 3);
+}
+
+function dictionaryAnswer(term: string, hits: DictEntry[]): Answer {
+  const main = hits[0]!;
+  const lines = hits
+    .slice(0, 3)
+    .map((h) => `${h.emoji} **${h.word}** ${h.ipa} — ${h.vi}  «bài ${h.lessonTitle}»`);
+  return {
+    text: `📖 ${lines.join("\n")}`,
+    sources: hits
+      .slice(0, 3)
+      .map((h) => ({ label: `${h.emoji} ${h.word}`, lessonSlug: h.lessonSlug })),
+    speakText: main.word,
+    typingChallenge: main.word,
+    corrective: false,
+  };
+}
+
+function dictionaryMiss(term: string): Answer {
+  const suggestions = pickSuggestions(term, 3);
+  // Từ tiếng Anh có trong wordlist Cambridge nhưng chưa có bài học riêng
+  const t = term.toLowerCase();
+  const inWordlist = thematicVocabLists.find((th) =>
+    [...th.starters, ...th.movers, ...th.flyers].some((w) => w.toLowerCase() === t),
+  );
+  const extra = inWordlist
+    ? ` Từ này có trong wordlist Cambridge chủ đề **${inWordlist.theme}** — bé xem trang Giáo trình nhé.`
+    : "";
+  return {
+    text: `🦉 Từ **«${term}»** chưa có trong ${lessons.length} bài học Starters → Flyers của cô.${extra} Bé thử hỏi từ khác trong bài học, hoặc nhờ ba mẹ bật chế độ AI để cô tra giúp nhé!`,
+    sources: [],
+    speakText: "Hmm, that word is not in our lessons yet!",
+    suggestions,
+    corrective: true,
+  };
+}
+
+const ANSWERABLE = new Set(["vocab", "grammar", "reading", "faq", "exam", "roadmap", "platform"]);
+
 /** Compose a local answer from retrieved chunks based on intent detection. */
 export function composeAnswer(query: string, results: RetrievedChunk[]): Answer {
+  // 0. Tra từ điển trực tiếp: "con hà mã tiếng Anh là gì?", "apple nghĩa là gì?"
+  const term = detectDictionaryQuery(query);
+  if (term) {
+    const hits = lookup(term);
+    if (hits.length) return dictionaryAnswer(term, hits);
+    // Câu hỏi rõ ràng là tra từ mà không có trong giáo trình → trả lời thẳng, không lấy chunk nhiễu
+    // (trừ khi RAG có chunk thật sự chứa từ đó, ví dụ chủ đề picture book).
+    const top0 = results[0];
+    const ragHasTerm =
+      top0 &&
+      grade(results) &&
+      ANSWERABLE.has(top0.chunk.source.type) &&
+      normalize(top0.chunk.text).includes(stripVi(term).toLowerCase());
+    if (!ragHasTerm && /tieng anh|nghia la|dich|in english|la gi/.test(normalize(query))) {
+      return dictionaryMiss(term);
+    }
+  }
+
+  const faq = matchFaq(query);
+  if (faq) return faq;
+
   if (!grade(results)) {
     return correctiveFallback(query);
   }
 
   const top = results[0]!;
   const sourceType = top.chunk.source.type;
+  if (!ANSWERABLE.has(sourceType)) return correctiveFallback(query);
   const sources = deduplicateSources(results.slice(0, 3));
 
   // Intent detection based on top chunk type

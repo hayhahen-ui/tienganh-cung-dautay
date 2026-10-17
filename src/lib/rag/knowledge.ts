@@ -107,7 +107,7 @@ function speakChunks(lesson: Lesson): Chunk[] {
   }));
 }
 
-function listenChunks(lesson: Lesson): Chunk[] {
+export function listenChunks(lesson: Lesson): Chunk[] {
   return lesson.listen.map((q, i) => ({
     id: `listen-${lesson.slug}-${i}`,
     text: `Luyện nghe: "${q.say}" — đáp án: ${q.answer}. (${q.prompt})`,
@@ -117,7 +117,7 @@ function listenChunks(lesson: Lesson): Chunk[] {
   }));
 }
 
-function writeChunks(lesson: Lesson): Chunk[] {
+export function writeChunks(lesson: Lesson): Chunk[] {
   return lesson.write.map((w, i) => ({
     id: `write-${lesson.slug}-${i}`,
     text: `Chính tả: ${w.emoji} "${w.hint}" — đáp án: ${w.answer}`,
@@ -133,8 +133,8 @@ function lessonChunks(lesson: Lesson): Chunk[] {
     ...grammarChunks(lesson),
     ...readingChunks(lesson),
     ...speakChunks(lesson),
-    ...listenChunks(lesson),
-    ...writeChunks(lesson),
+    // listen/write cố ý KHÔNG đưa vào KB: chunk chứa đáp án bài tập → lộ đáp án
+    // và tạo nhiễu kiểu "Chính tả: ... đáp án: mother" khi bé hỏi từ vựng.
   ];
 }
 
@@ -308,7 +308,7 @@ function metaChunks(): Chunk[] {
 
 // ── FAQ chunks (hand-written) ───────────────────────────────────────────
 
-const faqEntries: Array<{ q: string; a: string; kw: string }> = [
+export const faqEntries: Array<{ q: string; a: string; kw: string }> = [
   {
     q: "Owly English là gì",
     a: "Owly English là ứng dụng học tiếng Anh online miễn phí cho bé 8–12 tuổi, theo chuẩn Cambridge YLE (Starters → Movers → Flyers).",

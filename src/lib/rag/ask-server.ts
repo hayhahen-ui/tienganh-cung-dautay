@@ -43,3 +43,17 @@ export async function askLlm({ data }: { data: LlmRequest }): Promise<LlmRespons
     return { mode: "error", error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
+
+export type LlmHealth = { hasKey: boolean; provider: string | null; model: string | null };
+
+/** GET /api/ask-owly — kiểm tra AI đã cấu hình chưa, không tốn token. */
+export async function checkLlm(): Promise<LlmHealth | null> {
+  try {
+    const r = await fetch("/api/ask-owly", { method: "GET" });
+    if (!r.ok) return null;
+    const j = (await r.json()) as Partial<LlmHealth>;
+    return { hasKey: Boolean(j.hasKey), provider: j.provider ?? null, model: j.model ?? null };
+  } catch {
+    return null;
+  }
+}
