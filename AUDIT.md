@@ -152,3 +152,18 @@ máy này có key hoặc server có key (`isLlmOn()`).
 **Kiểm chứng:** câu lỗi → butterfly/on/flower đúng; 8 câu hồi quy
 (hello, dog, "cách dùng a an", "present simple là gì", "màu đỏ…", xyzabc…) giữ nguyên
 hành vi; `tsc` 0 lỗi, `eslint` 0 lỗi, `vite build` OK.
+
+## F. Chuyển frontend lên Render — Vercel chạm trần 100 deploys/ngày (19/10/2026, commit `b8c4e2a`)
+**Hiện tượng:** Vercel báo `Resource is limited - try again in 24 hours (more than 100,
+code: "api-deployments-free-per-day")` — deploy thủ công lẫn tự động đều đứng.
+**Hướng xử lý (giống mt5-mrbit-2026):** frontend → **Render Static Site** (không giới
+hạn deploy/ngày, free không ngủ), Vercel giữ làm **API backend** (`/api/ask-owly`).
+- `render.yaml` mới: build `npm install && npm run build`, publish `dist`,
+  rewrite SPA `/* → /index.html`, env `VITE_OWLY_API_URL=https://tienganh-cung-dautay.vercel.app`.
+- `src/lib/rag/ask-server.ts`: API base đọc từ `VITE_OWLY_API_URL` (build-time);
+  bỏ trống = gọi cùng origin như cũ (không vỡ dev/Vercel).
+- `api/_owly-proxy.js` + `api/ask-owly.js`: mở CORS `*` (GET/POST/OPTIONS) cho
+  frontend Render gọi API Vercel. API không dùng cookie nên `*` an toàn.
+**Lưu ý:** key AI và XP trong localStorage tính theo origin → sang domain Render phải
+dán key lại 1 lần. Deploy Vercel mang CORS headers sẽ tự chạy sau khi hết trần 24h
+(nếu Vercel không tự retry, bấm Redeploy tay trên commit mới nhất).
