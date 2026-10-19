@@ -35,6 +35,8 @@ export type LlmValidateResult = {
   provider?: string | undefined;
   model?: string | undefined;
   error?: string | undefined;
+  /** true khi không tới được API (CORS/mạng) — key có thể vẫn đúng, nên cho lưu trước. */
+  networkError?: boolean | undefined;
 };
 
 async function postApi(body: Record<string, unknown>, timeoutMs = 25000): Promise<Response> {
@@ -90,7 +92,18 @@ export async function validateLlmKey(apiKey: string): Promise<LlmValidateResult>
       error: typeof j.error === "string" ? j.error : undefined,
     };
   } catch (err) {
-    return { valid: false, error: err instanceof Error ? err.message : "Lỗi mạng." };
+    // TypeError = fetch không tới được server (CORS chặn, DNS, mạng…).
+    // Phân biệt với "key sai" (server trả JSON valid:false) để UI cho lưu key trước.
+    const isNetwork = err instanceof TypeError;
+    return {
+      valid: false,
+      networkError: isNetwork || undefined,
+      error: isNetwork
+        ? "Không kết nối được tới máy chủ API (có thể Vercel chưa cập nhật bản mới). Key vẫn có thể đúng — anh lưu trước, app sẽ tự dùng khi API sẵn sàng."
+        : err instanceof Error
+          ? err.message
+          : "Lỗi mạng.",
+    };
   }
 }
 

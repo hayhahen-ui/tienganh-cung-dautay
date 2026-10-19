@@ -35,7 +35,11 @@ export function AiKeySettings({
 }) {
   const [input, setInput] = useState("");
   const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [result, setResult] = useState<{
+    ok: boolean;
+    text: string;
+    networkError?: boolean;
+  } | null>(null);
   const [saved, setSaved] = useState(hasOwlyKey());
 
   const detected = input.trim() ? detectOwlyProvider(input.trim()) : null;
@@ -61,8 +65,23 @@ export function AiKeySettings({
       setResult({
         ok: false,
         text: `❌ ${r.error ?? "Key không hợp lệ, ba mẹ kiểm tra lại nhé."}`,
+        networkError: r.networkError === true,
       });
     }
+  };
+
+  /** Lưu key khi không kiểm tra được kết nối (lỗi mạng/CORS) — app tự dùng khi API sẵn sàng. */
+  const handleSaveAnyway = () => {
+    const key = input.trim();
+    if (!key) return;
+    saveOwlyKey(key);
+    setSaved(true);
+    setInput("");
+    setResult({
+      ok: true,
+      text: "✅ Đã lưu key trên máy này. Khi máy chủ API cập nhật xong, cô Owly sẽ tự dùng AI — không cần dán lại.",
+    });
+    onSaved();
   };
 
   const handleRemove = () => {
@@ -154,6 +173,16 @@ export function AiKeySettings({
             >
               {result.text}
             </p>
+          )}
+
+          {result && !result.ok && result.networkError && input.trim() && (
+            <button
+              type="button"
+              onClick={handleSaveAnyway}
+              className="w-full rounded-full border-2 border-dashed border-primary/50 px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/10"
+            >
+              💾 Lưu key trước, kiểm tra sau
+            </button>
           )}
 
           {/* Key miễn phí */}
