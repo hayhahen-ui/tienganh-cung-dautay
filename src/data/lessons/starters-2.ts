@@ -292,7 +292,7 @@ export const startersLessons2: Lesson[] = [
       { word: "desk", ipa: "/desk/", vi: "bàn học", emoji: "🪑" },
       { word: "board", ipa: "/bɔːd/", vi: "cái bảng", emoji: "🟩" },
       { word: "classroom", ipa: "/ˈklɑːsruːm/", vi: "lớp học", emoji: "🏫" },
-      { word: "teacher", ipa: "/ˈtiːtʃə/", vi: "giáo viên", emoji: "👩‍🏫" },
+      { word: "teacher", ipa: "/ˈtiːtʃə/", vi: "giáo viên, thầy giáo, cô giáo", emoji: "👩‍🏫" },
     ],
     grammar: {
       title: "Can I … ? & câu mệnh lệnh",

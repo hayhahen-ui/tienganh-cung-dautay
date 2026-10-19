@@ -24,10 +24,60 @@ export type Answer = {
 
 const CONFIDENCE_THRESHOLD = 0.008;
 
-/** Grade whether retrieved chunks are confident enough to answer. */
-export function grade(results: RetrievedChunk[]): boolean {
+/** Từ chung chung — không tính là "từ nội dung" khi kiểm tra chunk có liên quan. */
+const GRADE_STOP = new Set([
+  "cho",
+  "be",
+  "con",
+  "cai",
+  "cua",
+  "voi",
+  "va",
+  "thi",
+  "nhu",
+  "the",
+  "nao",
+  "cach",
+  "dung",
+  "sao",
+  "khi",
+  "o",
+  "de",
+  "duoc",
+  "mot",
+  "nhung",
+  "cac",
+  "nay",
+  "do",
+  "em",
+  "minh",
+  "hoi",
+  "tu",
+  "biet",
+]);
+
+/** Tách các từ nội dung (đã bỏ khung câu hỏi + từ đệm) khỏi câu hỏi của bé. */
+function contentTokens(query: string): string[] {
+  let q = normalize(query).replace(/[?!.,"'«»]/g, " ");
+  q = q.replace(QUESTION_MARKERS, " ");
+  QUESTION_MARKERS.lastIndex = 0;
+  return q.split(/\s+/).filter((w) => w.length >= 3 && !GRADE_STOP.has(w));
+}
+
+/**
+ * Grade whether retrieved chunks are confident enough to answer.
+ * Chắn false-positive (vd: hỏi "con bướm…" mà trả lời "viết hoa thứ/ngày"):
+ * chunk top phải chứa ít nhất 1 từ nội dung của câu hỏi.
+ */
+export function grade(results: RetrievedChunk[], query = ""): boolean {
   if (results.length === 0) return false;
-  return results[0]!.score >= CONFIDENCE_THRESHOLD;
+  const top = results[0]!;
+  if (top.score < CONFIDENCE_THRESHOLD) return false;
+  if (!query) return true;
+  const toks = contentTokens(query);
+  if (toks.length === 0) return true;
+  const hay = normalize(`${top.chunk.text} ${top.chunk.keywords}`);
+  return toks.some((t) => hay.includes(t));
 }
 
 // ── Tra từ điển trực tiếp (ưu tiên trước RAG) ───────────────────────────
@@ -179,6 +229,178 @@ function dictionaryMiss(term: string): Answer {
   };
 }
 
+// ── Dịch Việt → Anh ("con bướm đậu trên bông hoa tiếng anh là gì?") ──────
+
+const VI2EN_PATTERNS = [
+  /dich\s+(.+?)\s+sang\s+tieng\s+anh/,
+  /(.+?)\s+(trong\s+)?tieng\s+anh\s+(la\s+gi|nghia\s+la\s+gi|nghia\s+cua\s+la\s+gi|nghia\s+gi|noi\s+(sao|the\s+nao)|viet\s+(sao|the\s+nao)|doc\s+(sao|the\s+nao))/,
+];
+
+/** Lượng từ có dấu (bản giữ dấu của VI_CLASSIFIERS) để tách "con bướm" → "bướm". */
+const VI_CLASSIFIERS_DIA =
+  /^(con|cái|quả|củ|chiếc|màu|số|cây|bông|đôi|cặp|người|bộ|cuốn|tờ|bộ môn|môn|loại|phòng|nghề|hai|những|các)\s+/;
+
+function viFormsDia(vi: string): string[] {
+  const base = vi
+    .toLowerCase()
+    .replace(/\(.*?\)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const parts = base
+    .split(/[,;/]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const out = new Set<string>();
+  for (const p of parts) {
+    out.add(p);
+    out.add(p.replace(VI_CLASSIFIERS_DIA, ""));
+  }
+  return [...out];
+}
+
+/**
+ * Nhận diện ý định dịch Việt→Anh; trả về cụm tiếng Việt cần dịch (GIỮ DẤU) hoặc null.
+ * Giữ dấu để "đậu" không bị nhầm với "đầu".
+ */
+export function detectTranslationQuery(query: string): string | null {
+  const qDia = query
+    .toLowerCase()
+    .replace(/[?!.,"'«»]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const q = stripVi(qDia);
+  for (const re of VI2EN_PATTERNS) {
+    const m = q.match(re);
+    if (m && m[1]) {
+      let phraseStrip = m[1].trim();
+      for (let i = 0; i < 4; i++) {
+        phraseStrip = phraseStrip.replace(TRAILING_FILLERS, "").replace(LEADING_FILLERS, "").trim();
+      }
+      if (phraseStrip.length < 2) continue;
+      // Ánh xạ cụm không dấu về cụm có dấu trong câu gốc (so theo từng từ).
+      const diaWords = qDia.split(" ").filter(Boolean);
+      const stripWords = diaWords.map((w) => stripVi(w));
+      const pw = phraseStrip.split(" ").filter(Boolean);
+      for (let s = 0; s + pw.length <= stripWords.length; s++) {
+        if (pw.every((w, k) => stripWords[s + k] === w)) {
+          return diaWords.slice(s, s + pw.length).join(" ");
+        }
+      }
+      return phraseStrip;
+    }
+  }
+  return null;
+}
+
+type TranslationHit = { vi: string; entry: DictEntry };
+
+let _viFormMap: Map<string, DictEntry> | null = null;
+/** Map nghĩa Việt (đã bỏ dấu, đã bỏ lượng từ) → entry từ điển; form dài đứng trước. */
+function viFormMap(): Map<string, DictEntry> {
+  if (_viFormMap) return _viFormMap;
+  const map = new Map<string, DictEntry>();
+  const forms: { form: string; entry: DictEntry }[] = [];
+  for (const e of dictionary()) {
+    for (const f of viForms(e.vi)) {
+      if (f.length >= 2) forms.push({ form: f, entry: e });
+    }
+  }
+  forms.sort((a, b) => b.form.length - a.form.length);
+  for (const { form, entry } of forms) {
+    if (!map.has(form)) map.set(form, entry);
+  }
+  _viFormMap = map;
+  return map;
+}
+
+let _viDiaFormMap: Map<string, DictEntry> | null = null;
+/** Map nghĩa Việt GIỮ DẤU → entry; ưu tiên khi bé gõ có dấu ("đậu" ≠ "đầu"). */
+function viDiaFormMap(): Map<string, DictEntry> {
+  if (_viDiaFormMap) return _viDiaFormMap;
+  const map = new Map<string, DictEntry>();
+  const forms: { form: string; entry: DictEntry }[] = [];
+  for (const e of dictionary()) {
+    for (const f of viFormsDia(e.vi)) {
+      if (f.length >= 2) forms.push({ form: f, entry: e });
+    }
+  }
+  forms.sort((a, b) => b.form.length - a.form.length);
+  for (const { form, entry } of forms) {
+    if (!map.has(form)) map.set(form, entry);
+  }
+  _viDiaFormMap = map;
+  return map;
+}
+
+/** true khi từ còn dấu (stripVi làm đổi chuỗi). */
+const hasMarks = (w: string): boolean => stripVi(w) !== w;
+
+/**
+ * Dịch cụm tiếng Việt (giữ dấu) sang tiếng Anh bằng khớp tham lam cụm dài nhất.
+ * - Lượt 1: khớp chính xác có dấu (bé gõ "đậu" thì không nhầm "đầu").
+ * - Lượt 2: bỏ dấu — chỉ cho từ bé gõ không dấu.
+ */
+export function translatePhrase(phraseDia: string): TranslationHit[] {
+  const wordsDia = phraseDia.toLowerCase().split(/\s+/).filter(Boolean);
+  const wordsStrip = wordsDia.map((w) => stripVi(w));
+  const diaMap = viDiaFormMap();
+  const stripMap = viFormMap();
+  const hits: TranslationHit[] = [];
+  const seenEn = new Set<string>();
+  let i = 0;
+  while (i < wordsDia.length) {
+    let matched: DictEntry | null = null;
+    let len = 0;
+    for (let l = Math.min(4, wordsDia.length - i); l >= 1; l--) {
+      const cand = wordsDia.slice(i, i + l).join(" ");
+      const e = diaMap.get(cand);
+      if (e && !seenEn.has(e.word)) {
+        matched = e;
+        len = l;
+        break;
+      }
+    }
+    if (!matched) {
+      for (let l = Math.min(4, wordsStrip.length - i); l >= 1; l--) {
+        if (wordsDia.slice(i, i + l).some(hasMarks)) continue;
+        const cand = wordsStrip.slice(i, i + l).join(" ");
+        const e = stripMap.get(cand);
+        if (e && !seenEn.has(e.word)) {
+          matched = e;
+          len = l;
+          break;
+        }
+      }
+    }
+    if (matched) {
+      seenEn.add(matched.word);
+      hits.push({ vi: wordsDia.slice(i, i + len).join(" "), entry: matched });
+      i += len;
+    } else {
+      i++;
+    }
+  }
+  return hits;
+}
+
+function translationAnswer(hits: TranslationHit[]): Answer {
+  const lines = hits.map((h) => `${h.entry.emoji} **${h.entry.word}** ${h.entry.ipa} — ${h.vi}`);
+  const enWords = hits.map((h) => h.entry.word.split("/")[0]!.trim());
+  const sources: AnswerSource[] = hits.map((h) =>
+    h.entry.lessonSlug
+      ? { label: `${h.entry.emoji} ${h.entry.word}`, lessonSlug: h.entry.lessonSlug }
+      : { label: `${h.entry.emoji} ${h.entry.word}` },
+  );
+  const speakText = enWords.join(", ");
+  return {
+    text: `🌍 Trong tiếng Anh:\n${lines.join("\n")}\n\n💬 Bé đọc: "${speakText}"`,
+    sources,
+    speakText,
+    typingChallenge: enWords[0] && enWords[0].length <= 20 ? enWords[0] : undefined,
+    corrective: false,
+  };
+}
+
 /** Khớp FAQ trực tiếp bằng từ khóa (không bỏ stop-word) — bắt được "cách dùng a an". */
 function matchFaq(query: string): Answer | null {
   const q = normalize(query);
@@ -224,7 +446,15 @@ const ANSWERABLE = new Set(["vocab", "grammar", "reading", "faq", "exam", "roadm
 
 /** Compose a local answer from retrieved chunks based on intent detection. */
 export function composeAnswer(query: string, results: RetrievedChunk[]): Answer {
-  // 0. Tra từ điển trực tiếp: "con hà mã tiếng Anh là gì?", "apple nghĩa là gì?"
+  // 0a. Dịch Việt → Anh: "con bướm đậu trên bông hoa tiếng anh là gì?"
+  const trPhrase = detectTranslationQuery(query);
+  if (trPhrase) {
+    const trHits = translatePhrase(trPhrase);
+    if (trHits.length > 0) return translationAnswer(trHits);
+    // Không dịch được từ nào → rơi xuống luồng tra từ/RAG như cũ.
+  }
+
+  // 0b. Tra từ điển trực tiếp: "con hà mã tiếng Anh là gì?", "apple nghĩa là gì?"
   const term = detectDictionaryQuery(query);
   if (term) {
     const hits = lookup(term);
@@ -234,7 +464,7 @@ export function composeAnswer(query: string, results: RetrievedChunk[]): Answer 
     const top0 = results[0];
     const ragHasTerm =
       top0 &&
-      grade(results) &&
+      grade(results, query) &&
       ANSWERABLE.has(top0.chunk.source.type) &&
       normalize(top0.chunk.text).includes(stripVi(term).toLowerCase());
     const faqHit = matchFaq(query);
@@ -248,7 +478,7 @@ export function composeAnswer(query: string, results: RetrievedChunk[]): Answer 
   const faq = matchFaq(query);
   if (faq) return faq;
 
-  if (!grade(results)) {
+  if (!grade(results, query)) {
     return correctiveFallback(query);
   }
 

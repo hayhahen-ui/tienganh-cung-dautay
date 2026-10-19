@@ -4203,7 +4203,7 @@ export const yleDictionary: DictWord[] = [
   { en: "storm", vi: "bão", ipa: "/stɔːm/", emoji: "⛈️", theme: "Weather", level: "flyers" },
   {
     en: "teacher",
-    vi: "giáo viên",
+    vi: "giáo viên, thầy giáo, cô giáo",
     ipa: "/ˈtiːtʃə(r)/",
     emoji: "👨‍🏫",
     theme: "Work",
