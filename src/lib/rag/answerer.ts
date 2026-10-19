@@ -5,7 +5,8 @@
 import { type RetrievedChunk } from "./retriever";
 import { suggestedQuestions, faqEntries } from "./knowledge";
 import { normalize, stripVi } from "./text";
-import { lessons, thematicVocabLists, type Vocab } from "@/data/curriculum";
+import { lessons, type Vocab } from "@/data/curriculum";
+import { yleDictionary } from "@/data/dictionary";
 
 export type AnswerSource = {
   label: string;
@@ -31,31 +32,151 @@ export function grade(results: RetrievedChunk[]): boolean {
 
 // ── Tra từ điển trực tiếp (ưu tiên trước RAG) ───────────────────────────
 
-type DictEntry = Vocab & { lessonSlug: string; lessonTitle: string };
+type DictEntry = Vocab & {
+  lessonSlug?: string;
+  lessonTitle?: string;
+  theme?: string;
+  level?: string;
+};
 let _dict: DictEntry[] | null = null;
+/** Từ của 24 bài học đứng trước (có link bài), sau đó là toàn bộ wordlist YLE. */
 function dictionary(): DictEntry[] {
   if (_dict) return _dict;
-  _dict = lessons.flatMap((l) =>
+  const fromLessons: DictEntry[] = lessons.flatMap((l) =>
     l.vocab.map((v) => ({ ...v, lessonSlug: l.slug, lessonTitle: l.title })),
   );
+  const seen = new Set(fromLessons.map((e) => e.word.toLowerCase()));
+  const fromWordlist: DictEntry[] = yleDictionary
+    .filter((w) => !seen.has(w.en.toLowerCase()))
+    .map((w) => ({
+      word: w.en,
+      vi: w.vi,
+      ipa: w.ipa,
+      emoji: w.emoji,
+      theme: w.theme,
+      level: w.level,
+    }));
+  _dict = [...fromLessons, ...fromWordlist];
   return _dict;
 }
 
-const VI_PATTERNS: RegExp[] = [
-  /^(?:con|cai|cái|quả|qua|củ|cu|chiếc|chiec|màu|mau)?\s*(.+?)\s+(?:trong\s+)?tieng\s+anh\s+(?:la|goi|noi|viet|doc)\s+(?:la\s+)?(?:gi|sao|the nao|nhu the nao)/i,
-  /^(?:tu|chu)?\s*(.+?)\s+(?:nghia|dich)\s+(?:la|sang)?\s*(?:gi|tieng viet|tieng anh)/i,
-  /^(?:dich|translate)\s+(?:tu|chu|cau)?\s*(.+)$/i,
-  /^(?:what is|what's|whats)\s+(.+?)\s+in\s+(?:english|vietnamese)/i,
-  /^(.+?)\s+(?:la|là)\s+gi/i,
-];
+const QUESTION_MARKERS =
+  /\b(trong\s+)?tieng\s+(anh|viet)\b|\bnghia\s+(la|cua)\b|\bla\s+gi\b|\bgoi\s+la\b|\bnoi\s+(sao|the nao)\b|\bviet\s+(sao|the nao)\b|\bdoc\s+(sao|the nao)\b|\bdich\b|\btranslate\b|\bin\s+(english|vietnamese)\b|\bwhat\s+is\b|\bwhat'?s\b|\bmean(s|ing)?\b/g;
+const TRAILING_FILLERS =
+  /\b(vay|co|oi|nhe|nha|a|ạ|giup|giúp|minh|mình|nao|gi|sao|la|cua|the|nhu)\b\s*$/;
+const LEADING_FILLERS =
+  /^\s*(co|cô|oi|ơi|owly|cho|em|to|tớ|hoi|hỏi|xin|lam on|tu|từ|chu|chữ|cai|cái)\b/;
 
-function cleanTerm(t: string) {
-  // chỉ bỏ từ đệm rõ ràng; KHÔNG bỏ "ha", "con", "a"… vì có thể là một phần của từ cần tra (hà mã, con mèo)
-  return normalize(t)
-    .replace(/\b(oi|vay|nhe|nha|giup|giúp|minh|mình)\b/g, " ")
+/** Nhận diện ý định tra từ; trả về từ cần tra (đã bỏ dấu) hoặc null. */
+export function detectDictionaryQuery(query: string): string | null {
+  const q = normalize(query)
     .replace(/[?!.,"'«»]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  const isQuestion = QUESTION_MARKERS.test(q);
+  QUESTION_MARKERS.lastIndex = 0;
+  let term = q.replace(QUESTION_MARKERS, " ").replace(/\s+/g, " ").trim();
+  // bóc từ đệm ở hai đầu (lặp vài lần)
+  for (let i = 0; i < 4; i++) {
+    term = term.replace(TRAILING_FILLERS, "").replace(LEADING_FILLERS, "").trim();
+  }
+  if (isQuestion) return term.length >= 2 && term.split(" ").length <= 4 ? term : null;
+  // Không có dấu hiệu câu hỏi: chỉ coi là tra từ khi gõ 1–2 từ tiếng Anh
+  if (/^[a-z][a-z' -]{1,20}$/.test(q) && q.split(" ").length <= 2) return q;
+  return null;
+}
+
+const VI_CLASSIFIERS =
+  /^(con|cai|qua|cu|chiec|mau|so|cay|bong|doi|cap|nguoi|bo|cuon|to|bo mon|mon|loai|phong|nghe|hai|nhung|cac)\s+/;
+function viForms(vi: string): string[] {
+  const base = normalize(vi)
+    .replace(/\(.*?\)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const parts = base
+    .split(/[,;/]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const out = new Set<string>();
+  for (const p of parts) {
+    out.add(p);
+    out.add(p.replace(VI_CLASSIFIERS, ""));
+  }
+  return [...out];
+}
+
+function lookup(term: string): DictEntry[] {
+  const t = stripVi(term).toLowerCase().trim();
+  const tCore = t.replace(VI_CLASSIFIERS, "");
+  const d = dictionary();
+  const enKey = (e: DictEntry) => e.word.toLowerCase().split("/")[0]!.trim();
+  // 1. khớp chính xác tiếng Anh hoặc tiếng Việt
+  const exact = d.filter((e) => {
+    if (enKey(e) === t || e.word.toLowerCase() === t) return true;
+    return viForms(e.vi).some((f) => f === t || f === tCore);
+  });
+  if (exact.length) return exact;
+  // 2. khớp mềm: nghĩa Việt chứa cụm từ, hoặc từ Anh bắt đầu bằng term
+  const soft = d.filter((e) => {
+    const forms = viForms(e.vi);
+    return forms.some((f) => f.includes(tCore) && tCore.length >= 3) || enKey(e).startsWith(t);
+  });
+  if (soft.length) return soft.slice(0, 3);
+  // 3. term chứa nghĩa Việt (ví dụ "la cay" chứa "la" của "chiếc lá"): ưu tiên nghĩa dài nhất
+  const tWords = tCore.split(" ");
+  const contained = d
+    .map((e) => {
+      const best = viForms(e.vi)
+        .filter((f) => f.length >= 2 && f.split(" ").every((w) => tWords.includes(w)))
+        .sort((a, b) => b.length - a.length)[0];
+      return best ? { e, len: best.length } : null;
+    })
+    .filter((x): x is { e: DictEntry; len: number } => x !== null)
+    .sort((a, b) => b.len - a.len);
+  if (contained.length && contained[0]!.len >= Math.max(2, Math.floor(tCore.length / 2))) {
+    return contained.slice(0, 2).map((x) => x.e);
+  }
+  return [];
+}
+
+function dictionaryAnswer(term: string, hits: DictEntry[]): Answer {
+  const main = hits[0]!;
+  const LEVEL_NAME: Record<string, string> = {
+    starters: "Starters",
+    movers: "Movers",
+    flyers: "Flyers",
+  };
+  const lines = hits.slice(0, 3).map((h) => {
+    const where = h.lessonTitle
+      ? `«bài ${h.lessonTitle}»`
+      : `«wordlist ${LEVEL_NAME[h.level ?? ""] ?? ""} · ${h.theme ?? ""}»`;
+    return `${h.emoji} **${h.word}** ${h.ipa} — ${h.vi}  ${where}`;
+  });
+  const sources: AnswerSource[] = hits
+    .slice(0, 3)
+    .map((h) =>
+      h.lessonSlug
+        ? { label: `${h.emoji} ${h.word}`, lessonSlug: h.lessonSlug }
+        : { label: `${h.emoji} ${h.word}` },
+    );
+  return {
+    text: `📖 ${lines.join("\n")}`,
+    sources,
+    speakText: main.word,
+    typingChallenge: main.word,
+    corrective: false,
+  };
+}
+
+function dictionaryMiss(term: string): Answer {
+  const suggestions = pickSuggestions(term, 3);
+  return {
+    text: `🦉 Từ **«${term}»** chưa có trong từ điển Cambridge YLE (${dictionary().length} từ Starters → Flyers) của cô. Bé kiểm tra lại chính tả, thử từ gần nghĩa, hoặc nhờ ba mẹ bật chế độ AI để cô tra giúp nhé!`,
+    sources: [],
+    speakText: "Hmm, that word is not in our lessons yet!",
+    suggestions,
+    corrective: true,
+  };
 }
 
 /** Khớp FAQ trực tiếp bằng từ khóa (không bỏ stop-word) — bắt được "cách dùng a an". */
@@ -86,7 +207,7 @@ function matchFaq(query: string): Answer | null {
     let inter = 0;
     for (const w of qWords) if (kws.has(w)) inter++;
     const score = inter / Math.max(1, qWords.size);
-    if (inter >= 2 && score >= 0.6 && (!best || score > best.score)) best = { score, f };
+    if (inter >= 1 && score >= 0.6 && (!best || score > best.score)) best = { score, f };
   }
   if (!best) return null;
   const speakText = extractEnglish(best.f.a);
@@ -96,78 +217,6 @@ function matchFaq(query: string): Answer | null {
     speakText: speakText || "Let's learn English together!",
     typingChallenge: speakText.length > 5 ? speakText : undefined,
     corrective: false,
-  };
-}
-
-/** Nhận diện ý định tra từ; trả về từ cần tra (đã bỏ dấu) hoặc null. */
-export function detectDictionaryQuery(query: string): string | null {
-  const q = normalize(query).replace(/\s+/g, " ").trim();
-  for (const re of VI_PATTERNS) {
-    const m = q.match(re);
-    if (m?.[1]) {
-      const term = cleanTerm(m[1]);
-      if (term.length >= 2 && term.split(" ").length <= 4) return term;
-    }
-  }
-  // Một từ tiếng Anh đơn lẻ, ví dụ "hippo" hoặc "hippo?"
-  if (/^[a-z][a-z' -]{1,20}$/.test(q) && q.split(" ").length <= 2) return q;
-  return null;
-}
-
-function lookup(term: string): DictEntry[] {
-  const t = stripVi(term).toLowerCase();
-  const d = dictionary();
-  const exact = d.filter((e) => {
-    const en = e.word.toLowerCase();
-    const vi = normalize(e.vi)
-      .replace(/\(.*?\)/g, "")
-      .trim();
-    const viCore = vi.replace(/^(con|cai|qua|cu|chiec|mau|so|bàn|ban|hai|nhung|cái|số)\s+/, "");
-    return en === t || vi === t || viCore === t;
-  });
-  if (exact.length) return exact;
-  return d
-    .filter((e) => {
-      const vi = normalize(e.vi);
-      return (
-        vi.split(/[,;(]/)[0]!.trim().split(" ").includes(t) || t.includes(e.word.toLowerCase())
-      );
-    })
-    .slice(0, 3);
-}
-
-function dictionaryAnswer(term: string, hits: DictEntry[]): Answer {
-  const main = hits[0]!;
-  const lines = hits
-    .slice(0, 3)
-    .map((h) => `${h.emoji} **${h.word}** ${h.ipa} — ${h.vi}  «bài ${h.lessonTitle}»`);
-  return {
-    text: `📖 ${lines.join("\n")}`,
-    sources: hits
-      .slice(0, 3)
-      .map((h) => ({ label: `${h.emoji} ${h.word}`, lessonSlug: h.lessonSlug })),
-    speakText: main.word,
-    typingChallenge: main.word,
-    corrective: false,
-  };
-}
-
-function dictionaryMiss(term: string): Answer {
-  const suggestions = pickSuggestions(term, 3);
-  // Từ tiếng Anh có trong wordlist Cambridge nhưng chưa có bài học riêng
-  const t = term.toLowerCase();
-  const inWordlist = thematicVocabLists.find((th) =>
-    [...th.starters, ...th.movers, ...th.flyers].some((w) => w.toLowerCase() === t),
-  );
-  const extra = inWordlist
-    ? ` Từ này có trong wordlist Cambridge chủ đề **${inWordlist.theme}** — bé xem trang Giáo trình nhé.`
-    : "";
-  return {
-    text: `🦉 Từ **«${term}»** chưa có trong ${lessons.length} bài học Starters → Flyers của cô.${extra} Bé thử hỏi từ khác trong bài học, hoặc nhờ ba mẹ bật chế độ AI để cô tra giúp nhé!`,
-    sources: [],
-    speakText: "Hmm, that word is not in our lessons yet!",
-    suggestions,
-    corrective: true,
   };
 }
 
@@ -188,7 +237,10 @@ export function composeAnswer(query: string, results: RetrievedChunk[]): Answer 
       grade(results) &&
       ANSWERABLE.has(top0.chunk.source.type) &&
       normalize(top0.chunk.text).includes(stripVi(term).toLowerCase());
-    if (!ragHasTerm && /tieng anh|nghia la|dich|in english|la gi/.test(normalize(query))) {
+    const faqHit = matchFaq(query);
+    if (faqHit) return faqHit;
+    if (!ragHasTerm && QUESTION_MARKERS.test(normalize(query))) {
+      QUESTION_MARKERS.lastIndex = 0;
       return dictionaryMiss(term);
     }
   }
