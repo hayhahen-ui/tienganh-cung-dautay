@@ -131,3 +131,24 @@ máy này có key hoặc server có key (`isLlmOn()`).
 - Dev server E2E: `GET /api/ask-owly` → `hasKey:false`; `POST validate` key giả →
   `{valid:false}` đúng định dạng; `POST` không key → `{mode:"not-configured"}`.
 - RAG runtime: `buildKnowledgeBase()` → 670 chunk, trong đó 36 chunk OPD đủ 3 level.
+
+## E. Fix "không dịch được" — cô Owly trả lời sai khi hỏi dịch Việt→Anh (19/10/2026, commit `e7fe137`)
+**Hiện tượng (user báo, có ảnh chụp):** hỏi *"con bướm đậu trên bông hoa tiếng anh nghĩa là gì"*
+→ cô trả lời *"Trong tiếng Anh, các thứ trong tuần (Monday, Tuesday...) luôn viết hoa…"* — sai hoàn toàn.
+**Nguyên nhân (tái hiện local, xác nhận 3 lỗi):**
+1. `detectDictionaryQuery` từ chối cụm > 4 từ → câu dịch cả câu không bao giờ vào từ điển.
+2. Grader quá dễ dãi: ngưỡng 0.008 cho chunk FAQ "viết hoa thứ/ngày" (khớp nhờ đúng 2 từ
+   chung "tiếng anh") qua mặt với score 0.0328 → trả lời tự tin sai (`corrective: false`).
+3. (phụ) Bỏ dấu trước khi khớp khiến "đậu" nhầm thành "đầu" (head).
+**Fix trong `src/lib/rag/answerer.ts`:**
+- Intent mới **dịch Việt→Anh**: pattern `"…tiếng anh là gì"`, `"dịch … sang tiếng anh"`,
+  `"…nói/viết sao"` → khớp tham lam cụm dài nhất qua map nghĩa Việt→entry (926 từ).
+  Ưu tiên khớp **có dấu** trước ("đậu" ≠ "đầu"); chỉ bỏ dấu với từ bé gõ không dấu.
+  Trả lời: từng từ + IPA + emoji + nút nghe + thử thách đánh máy.
+- Grader cứng hơn: chunk top phải chứa ≥ 1 từ nội dung của câu hỏi (đã trừ khung
+  câu hỏi + stop-word), nếu không → `corrective` để LLM (khi bật) trả lời thẳng.
+- Từ điển: `teacher` thêm alias "thầy giáo, cô giáo" (sửa cả `dictionary.ts` và
+  `lessons/starters-2.ts` vì entry bài học được dedupe ưu tiên).
+**Kiểm chứng:** câu lỗi → butterfly/on/flower đúng; 8 câu hồi quy
+(hello, dog, "cách dùng a an", "present simple là gì", "màu đỏ…", xyzabc…) giữ nguyên
+hành vi; `tsc` 0 lỗi, `eslint` 0 lỗi, `vite build` OK.
