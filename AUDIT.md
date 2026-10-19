@@ -80,3 +80,54 @@ Ngày audit: 17/10/2026 · Phạm vi: 107 file trong `HOCTIENGANH-main.zip` (đ�
 4. Đề thi thử Starters/Movers/Flyers theo đúng format từng Part (dữ liệu `examStructures` đã có).
 5. Thêm 6–12 bài nữa để phủ hết 18 chủ đề wordlist; thêm phần Speaking Part 1–4 mô phỏng.
 6. Unit test cho `progress.ts`, `buildQuiz`, `buildBlankQuestions`; e2e Playwright.
+
+---
+
+# 🔍 Audit bổ sung 19/10/2026 → commit `892c461`
+
+## A. "📚 Giáo trình (AI chưa bật)" — đấu nối key API kiểu mt5-mrbit-2026 (BYOK)
+**Nguyên nhân badge:** production `/api/ask-owly` trả `hasKey: false` — Vercel chưa hề
+cấu hình `OWLY_LLM_API_KEY`, và client cũ chỉ nhìn key server.
+**Fix:** ba mẹ dán key TRONG APP (nút ⚙️ ở trang Hỏi cô Owly) → lưu `localStorage`
+(`owly-ai-key-v1`, xem `src/lib/rag/owlyKeys.ts` — chỉ hiện `••••abcd`) → gửi kèm
+mỗi request; proxy (`api/_owly-proxy.js` dùng chung dev + Vercel) ưu tiên key user,
+chỉ chuyển tiếp, **không lưu, không log**. Badge tự bật `🤖 AI + giáo trình` khi
+máy này có key hoặc server có key (`isLlmOn()`).
+- `src/lib/rag/owlyProviders.ts`: 6 provider, tự nhận diện từ tiền tố key.
+- `AiKeySettings.tsx`: dialog nhập key + nút "Kiểm tra kết nối & lưu key"
+  (proxy gọi `GET /models`, không tốn token chat) + link lấy key miễn phí
+  (Groq/Gemini/OpenRouter).
+- Lỗi tạm thời (mạng/quota) không còn tắt hẳn badge — chỉ hiện lỗi, key vẫn giữ.
+
+## B. Bug proxy phát hiện khi audit
+| # | Vấn đề | Fix |
+|---|--------|-----|
+| P1 | Provider `anthropic` (`sk-ant-`) bị gọi sai endpoint `…/v1/chat/completions` (không tồn tại) với auth Bearer → mọi key Claude đều lỗi | Dùng đúng Anthropic Messages API: `POST /v1/messages` + header `x-api-key` + `anthropic-version` |
+| P2 | Logic proxy trùng lặp giữa `vite.config.ts` và `api/ask-owly.js` (đã từng gây lệch nhau) | Tách `api/_owly-proxy.js` dùng chung (+ `.d.ts`) |
+| P3 | Proxy không giới hạn tần suất → key user đi qua proxy có thể bị lạm dụng | Rate-limit 30 req/phút/IP (backlog #2 đã xong 1 nửa) |
+
+## C. Link chết trang Giáo trình (kiểm bằng curl 19/10/2026)
+| # | Link cũ | Tình trạng | Link mới |
+|---|---------|------------|----------|
+| L1 | `Images/506166-…-word-list-2018.pdf` | **301 → file 2025** (nhãn "bản 2018" sai + trùng entry 2025) | Gộp thành 1 entry trỏ thẳng file 2025 |
+| L2 | `…/fun-starters-movers-and-flyers-fourth-edition` | **404** | `https://www.cambridge.org/funfor` (verify 200) |
+| L3 | `…/storyfun-starters-movers-and-flyers-2nd-edition` | **404** | `https://www.cambridge.org/storyfun` (verify 200) |
+| L4 | `…/cambridge-english-young-learners-practice-tests` | **404** | `https://www.cambridge.org/practicetests` (short URL chính thức trong catalogue 2026) |
+
+## D. Tích hợp Oxford Picture Dictionary theo cấp độ
+- `src/data/oxfordPicture.ts`: **36 chủ đề** (12 🌱 Starters / 12 🌿 Movers / 12 🌳 Flyers),
+  mỗi chủ đề 8–14 từ, gắn nhóm unit OPD.
+- Trang Giáo trình thêm mục **🖼️ Từ vựng tranh Oxford theo cấp độ**: lọc theo cấp,
+  bấm chủ đề mở từ vựng, bấm từng từ nghe phát âm (Web Speech).
+- RAG: +36 chunk (`oxford-picture-*`) có gắn `level` → cô Owly trả lời được từ OPD.
+- ⚠️ File PICTURE_OXFORD trên Google Drive **chưa chia sẻ công khai** (mở link ẩn danh
+  bị chuyển về trang đăng nhập Google) → nội dung trên dựng từ cấu trúc chuẩn OPD;
+  khi ba/mẹ mở chia sẻ link, sẽ merge đúng file gốc vào.
+
+## Kiểm chứng
+- `tsc --noEmit`: 0 lỗi · `eslint` (file đổi): 0 lỗi · `vite build`: OK.
+- Unit logic proxy (node): user key ưu tiên > env > not-configured; rate-limit chặn
+  đúng ở request 31; detect provider đúng 6/6 tiền tố.
+- Dev server E2E: `GET /api/ask-owly` → `hasKey:false`; `POST validate` key giả →
+  `{valid:false}` đúng định dạng; `POST` không key → `{mode:"not-configured"}`.
+- RAG runtime: `buildKnowledgeBase()` → 670 chunk, trong đó 36 chunk OPD đủ 3 level.
