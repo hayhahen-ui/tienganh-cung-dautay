@@ -12,6 +12,16 @@
  */
 import { getOwlyKey } from "./owlyKeys";
 
+/**
+ * Base URL của API. Mặc định "" = cùng origin (Vercel).
+ * Khi frontend chạy trên Render, set VITE_OWLY_API_URL=https://tienganh-cung-dautay.vercel.app
+ * để gọi API ask-owly đang ở Vercel (CORS đã mở ở api/ask-owly.js).
+ */
+const API_BASE = (
+  (import.meta.env as Record<string, string | undefined>)["VITE_OWLY_API_URL"] || ""
+).replace(/\/$/, "");
+const apiUrl = (path: string): string => `${API_BASE}${path}`;
+
 type LlmRequest = {
   question: string;
   context: string;
@@ -31,7 +41,7 @@ async function postApi(body: Record<string, unknown>, timeoutMs = 25000): Promis
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch("/api/ask-owly", {
+    return await fetch(apiUrl("/api/ask-owly"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -89,7 +99,7 @@ export type LlmHealth = { hasKey: boolean; provider: string | null; model: strin
 /** GET /api/ask-owly — kiểm tra SERVER có key không (không thấy key của user). */
 export async function checkLlm(): Promise<LlmHealth | null> {
   try {
-    const r = await fetch("/api/ask-owly", { method: "GET" });
+    const r = await fetch(apiUrl("/api/ask-owly"), { method: "GET" });
     if (!r.ok) return null;
     const j = (await r.json()) as Partial<LlmHealth>;
     return { hasKey: Boolean(j.hasKey), provider: j.provider ?? null, model: j.model ?? null };

@@ -65,6 +65,18 @@ Quy tắc:
 - Không bịa link, không nói về chủ đề ngoài học tiếng Anh; nếu bé hỏi chuyện không phù hợp, nhẹ nhàng hướng về bài học.
 - An toàn cho trẻ em, thân thiện, khích lệ, xưng "cô" và gọi "bé".`;
 
+// ── CORS: cho phép frontend ở origin khác (Render) gọi API ───────────────────
+// API không dùng cookie/auth — key là của user gửi kèm body, nên "*" an toàn.
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Max-Age": "86400",
+};
+function applyCors(res) {
+  for (const [k, v] of Object.entries(CORS_HEADERS)) res.setHeader(k, v);
+}
+
 // ── Rate limit đơn giản: 30 request/phút/IP (chống lạm dụng proxy) ─────────
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_MAX = 30;
@@ -181,4 +193,12 @@ async function validateKey(provider, baseUrl, apiKey) {
   return { valid: false, error: `HTTP ${response.status}: ${errText.slice(0, 120)}` };
 }
 
-export { PROVIDERS, SYSTEM_PROMPT, checkRateLimit, resolveConfig, callChat, validateKey };
+export {
+  PROVIDERS,
+  SYSTEM_PROMPT,
+  checkRateLimit,
+  resolveConfig,
+  callChat,
+  validateKey,
+  applyCors,
+};

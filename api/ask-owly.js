@@ -19,7 +19,7 @@
  *   { action: "validate", apiKey } → { valid: true, provider, model } | { valid: false, error }
  * GET → { status: "ok", hasKey, provider, model } (chỉ phản ánh key server)
  */
-import { resolveConfig, callChat, validateKey, checkRateLimit } from "./_owly-proxy.js";
+import { resolveConfig, callChat, validateKey, checkRateLimit, applyCors } from "./_owly-proxy.js";
 
 function clientIp(req) {
   const fwd = req.headers["x-forwarded-for"];
@@ -28,6 +28,8 @@ function clientIp(req) {
 }
 
 export default async function handler(req, res) {
+  applyCors(res);
+  if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method === "GET") {
     const { apiKey, model, provider } = resolveConfig("");
     return res.status(200).json({

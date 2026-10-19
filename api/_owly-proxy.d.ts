@@ -33,3 +33,4 @@ export declare function validateKey(
   baseUrl: string,
   apiKey: string,
 ): Promise<{ valid: boolean; error?: string }>;
+export declare function applyCors(res: { setHeader: (k: string, v: string) => void }): void;
