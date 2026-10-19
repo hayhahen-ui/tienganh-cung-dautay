@@ -12,7 +12,10 @@ const PROVIDERS = [
     id: "groq",
     test: (k) => k.startsWith("gsk_"),
     base: "https://api.groq.com/openai/v1",
-    model: "llama-3.3-70b-versatile",
+    // llama-3.3-70b-versatile bị Groq khai tử cho gói Free/Developer từ 16/08/2026
+    // → model_not_found. Model thay thế chính thức: openai/gpt-oss-20b.
+    model: "openai/gpt-oss-20b",
+    fallbackModel: "openai/gpt-oss-120b",
     name: "groq",
     openAiCompatible: true,
   },
@@ -116,10 +119,37 @@ async function fetchWithTimeout(url, opts, ms) {
   }
 }
 
-/** Gọi chat — hỗ trợ cả OpenAI-compatible và Anthropic Messages API. */
+/** Gọi chat — hỗ trợ cả OpenAI-compatible và Anthropic Messages API.
+ * Tự thử model dự phòng 1 lần khi nhà cung cấp báo model không tồn tại
+ * (Groq hay khai tử model — đã gặp 19/10/2026 với llama-3.3-70b-versatile). */
 async function callChat(provider, baseUrl, model, apiKey, question, context) {
   const userContent = `Ngữ cảnh từ giáo trình:\n${context}\n\nCâu hỏi của bé: ${question}`;
+  const attempts = [model];
+  if (provider.fallbackModel && provider.fallbackModel !== model)
+    attempts.push(provider.fallbackModel);
 
+  let lastError = "";
+  for (const m of attempts) {
+    const r = await singleChatAttempt(provider, baseUrl, m, apiKey, userContent);
+    if (r.ok) return r;
+    lastError = r.error;
+    if (!isModelNotFound(r.error)) break; // lỗi khác (key sai, hết quota…) → không thử tiếp
+  }
+  if (isModelNotFound(lastError)) {
+    return {
+      ok: false,
+      error:
+        "Model AI đã bị nhà cung cấp ngừng hỗ trợ — cô Owly vẫn trả lời bằng giáo trình bên dưới nhé.",
+    };
+  }
+  return { ok: false, error: lastError };
+}
+
+function isModelNotFound(errText) {
+  return /model_not_found|does not exist|model .* not found/i.test(errText || "");
+}
+
+async function singleChatAttempt(provider, baseUrl, model, apiKey, userContent) {
   if (!provider.openAiCompatible && provider.id === "anthropic") {
     const response = await fetchWithTimeout(
       `${baseUrl}/messages`,
