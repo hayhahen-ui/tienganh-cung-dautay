@@ -1,13 +1,16 @@
 /**
- * LLM client — calls server proxy /api/ask-owly to keep API key secure.
- * The proxy (Vite dev middleware or Vercel serverless function) forwards
- * the request to DashScope/Qwen API without exposing the key to the browser.
+ * LLM client — calls server proxy /api/ask-owly.
  *
- * The proxy itself checks if the API key is configured and returns
- * { mode: "not-configured" } if not — so the client always calls it.
- *
- * Falls back gracefully when not configured or offline.
+ * Đấu nối key theo mẫu mt5-mrbit-2026 (BYOK — bring your own key):
+ * - Ba mẹ dán API key trong UI "Hỏi cô Owly" → lưu ở localStorage trên máy
+ *   (xem owlyKeys.ts), KHÔNG gửi về server lưu trữ.
+ * - Mỗi request chat/validate gửi key KÈM THEO trong body; proxy
+ *   (/api/ask-owly hoặc Vite dev middleware) chỉ dùng để chuyển tiếp sang
+ *   nhà cung cấp AI rồi quên ngay — không lưu, không log key.
+ * - Không có key của user → proxy dùng key server (nếu admin cấu hình),
+ *   nếu không có nữa → app chạy chế độ "📚 Giáo trình" như cũ.
  */
+import { getOwlyKey } from "./owlyKeys";
 
 type LlmRequest = {
   question: string;
@@ -17,22 +20,37 @@ type LlmRequest = {
 type LlmResponse =
   { mode: "llm"; text: string } | { mode: "not-configured" } | { mode: "error"; error: string };
 
-export async function askLlm({ data }: { data: LlmRequest }): Promise<LlmResponse> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+export type LlmValidateResult = {
+  valid: boolean;
+  provider?: string | undefined;
+  model?: string | undefined;
+  error?: string | undefined;
+};
 
-    const response = await fetch("/api/ask-owly", {
+async function postApi(body: Record<string, unknown>, timeoutMs = 25000): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch("/api/ask-owly", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        question: data.question,
-        context: data.context,
-      }),
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
-
+  } finally {
     clearTimeout(timeout);
+  }
+}
+
+export async function askLlm({ data }: { data: LlmRequest }): Promise<LlmResponse> {
+  try {
+    const userKey = getOwlyKey();
+    const response = await postApi({
+      question: data.question,
+      context: data.context,
+      // Key của user (nếu có) — proxy ưu tiên dùng key này, không lưu lại.
+      ...(userKey ? { apiKey: userKey } : {}),
+    });
 
     if (!response.ok) {
       return { mode: "error", error: `HTTP ${response.status}` };
@@ -44,9 +62,31 @@ export async function askLlm({ data }: { data: LlmRequest }): Promise<LlmRespons
   }
 }
 
+/**
+ * Kiểm tra key ba mẹ vừa dán có thật sự gọi được AI không.
+ * Proxy gọi thử endpoint models của provider (không tốn token chat).
+ */
+export async function validateLlmKey(apiKey: string): Promise<LlmValidateResult> {
+  const key = apiKey.trim();
+  if (!key) return { valid: false, error: "Chưa nhập key." };
+  try {
+    const response = await postApi({ action: "validate", apiKey: key }, 20000);
+    if (!response.ok) return { valid: false, error: `HTTP ${response.status}` };
+    const j = (await response.json()) as Partial<LlmValidateResult>;
+    return {
+      valid: j.valid === true,
+      provider: typeof j.provider === "string" ? j.provider : undefined,
+      model: typeof j.model === "string" ? j.model : undefined,
+      error: typeof j.error === "string" ? j.error : undefined,
+    };
+  } catch (err) {
+    return { valid: false, error: err instanceof Error ? err.message : "Lỗi mạng." };
+  }
+}
+
 export type LlmHealth = { hasKey: boolean; provider: string | null; model: string | null };
 
-/** GET /api/ask-owly — kiểm tra AI đã cấu hình chưa, không tốn token. */
+/** GET /api/ask-owly — kiểm tra SERVER có key không (không thấy key của user). */
 export async function checkLlm(): Promise<LlmHealth | null> {
   try {
     const r = await fetch("/api/ask-owly", { method: "GET" });
@@ -56,4 +96,14 @@ export async function checkLlm(): Promise<LlmHealth | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * AI có bật không = server có key HOẶC máy này đã lưu key của ba mẹ.
+ * Dùng cho badge "🤖 AI + giáo trình" / "📚 Giáo trình (AI chưa bật)".
+ */
+export async function isLlmOn(): Promise<boolean> {
+  if (getOwlyKey()) return true;
+  const h = await checkLlm();
+  return h?.hasKey === true;
 }

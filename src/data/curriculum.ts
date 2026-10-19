@@ -2817,7 +2817,7 @@ export const syllabus = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TÀI LIỆU CAMBRIDGE MIỄN PHÍ — link tải trực tiếp từ cambridgeenglish.org
-// (đã kiểm tra còn hoạt động, cập nhật 08/2026)
+// (đã kiểm tra còn hoạt động, cập nhật 10/2026)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type Download = {
@@ -2830,15 +2830,8 @@ export type Download = {
 
 export const cambridgeDownloads: Download[] = [
   {
-    name: "YLE Wordlists — Starters · Movers · Flyers (bản 2018)",
-    desc: "Danh sách từ vựng chính thức của cả 3 cấp: theo bảng chữ cái + theo chủ đề + ngữ pháp. Đây là 'bản đồ' xác định bé cần học đúng bao nhiêu từ.",
-    level: "Tất cả cấp",
-    type: "PDF",
-    url: "https://www.cambridgeenglish.org/Images/506166-starters-movers-flyers-word-list-2018.pdf",
-  },
-  {
-    name: "YLE Wordlists — bản cập nhật mới nhất",
-    desc: "Bản wordlist mới nhất của Cambridge, có đánh dấu từ thêm/bớt so với bản 2018.",
+    name: "YLE Wordlists — Starters · Movers · Flyers (bản mới nhất)",
+    desc: "Danh sách từ vựng chính thức của cả 3 cấp: theo bảng chữ cái + theo chủ đề + ngữ pháp — 'bản đồ' xác định bé cần học đúng bao nhiêu từ. (Link bản 2018 cũ nay đã được Cambridge chuyển sang bản mới nhất.)",
     level: "Tất cả cấp",
     type: "PDF",
     url: "https://www.cambridgeenglish.org/Images/506166-starters-movers-flyers-word-list-2025.pdf",
@@ -2976,17 +2969,17 @@ export const examBooks: ExamBook[] = [
   {
     name: "Fun for Starters / Movers / Flyers (4th ed.) — Cambridge",
     when: "Sách luyện thi chính, dùng 4–6 tháng cuối mỗi cấp",
-    url: "https://www.cambridge.org/gb/cambridgeenglish/catalog/cambridge-english-exams-ielts/fun-starters-movers-and-flyers-fourth-edition",
+    url: "https://www.cambridge.org/funfor",
   },
   {
     name: "Storyfun for Starters / Movers / Flyers — Cambridge",
     when: "Bổ trợ Đọc–Viết qua truyện, học song song với Fun for",
-    url: "https://www.cambridge.org/gb/cambridgeenglish/catalog/cambridge-english-exams-ielts/storyfun-starters-movers-and-flyers-2nd-edition",
+    url: "https://www.cambridge.org/storyfun",
   },
   {
     name: "Authentic Practice Tests 1–4 — Cambridge",
     when: "Đề thi thật các năm trước, dành cho 8 tuần cuối trước kỳ thi",
-    url: "https://www.cambridge.org/gb/cambridgeenglish/catalog/cambridge-english-exams-ielts/cambridge-english-young-learners-practice-tests",
+    url: "https://www.cambridge.org/practicetests",
   },
   {
     name: "Get Ready for Starters / Movers / Flyers — Oxford",

@@ -3,11 +3,12 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { resolveConfig, callChat, validateKey, checkRateLimit } from "./api/_owly-proxy.js";
 
 /**
- * Vite plugin: proxy /api/ask-owly → DashScope/Qwen LLM API
- * Keeps API key on the server side — never exposed to the browser.
- * In production (Vercel), use /api/ask-owly.ts serverless function.
+ * Vite plugin: proxy /api/ask-owly → LLM provider (dev).
+ * Dùng chung logic với api/ask-owly.js (production) qua api/_owly-proxy.js.
+ * Key của user (localStorage) được ưu tiên — proxy không lưu, không log.
  */
 function llmProxyPlugin(): Plugin {
   let env: Record<string, string> = {};
@@ -26,24 +27,30 @@ function llmProxyPlugin(): Plugin {
           return next();
         }
 
-        const devKey = env["OWLY_LLM_API_KEY"] || env["VITE_OWLY_LLM_API_KEY"] || "";
-        if (req.method === "GET") {
+        const send = (obj: unknown) => {
           res.statusCode = 200;
           res.setHeader("Content-Type", "application/json");
-          res.end(
-            JSON.stringify({
-              status: "ok",
-              hasKey: Boolean(devKey),
-              provider: devKey ? "custom" : null,
-              model: null,
-            }),
-          );
+          res.end(JSON.stringify(obj));
+        };
+
+        if (req.method === "GET") {
+          const { apiKey, model, provider } = resolveConfig("", env);
+          send({
+            status: "ok",
+            hasKey: Boolean(apiKey),
+            provider: apiKey ? provider.name : null,
+            model: apiKey ? model : null,
+          });
           return;
         }
         if (req.method !== "POST") {
           res.statusCode = 405;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "Method not allowed" }));
+          return;
+        }
+        if (checkRateLimit(req.socket?.remoteAddress || "dev")) {
+          send({ mode: "error", error: "Quá nhiều yêu cầu, bé đợi 1 phút nhé." });
           return;
         }
 
@@ -54,95 +61,45 @@ function llmProxyPlugin(): Plugin {
           }
           const body = JSON.parse(Buffer.concat(chunks).toString());
 
-          const apiKey = env["OWLY_LLM_API_KEY"] || env["VITE_OWLY_LLM_API_KEY"] || "";
-          const baseUrl =
-            env["OWLY_LLM_BASE_URL"] ||
-            env["VITE_OWLY_LLM_BASE_URL"] ||
-            (apiKey.startsWith("gsk_")
-              ? "https://api.groq.com/openai/v1"
-              : apiKey.startsWith("sk-")
-                ? "https://api.openai.com/v1"
-                : "https://dashscope-intl.aliyuncs.com/compatible-mode/v1");
-          const model =
-            env["OWLY_LLM_MODEL"] ||
-            env["VITE_OWLY_LLM_MODEL"] ||
-            (apiKey.startsWith("gsk_")
-              ? "llama-3.3-70b-versatile"
-              : apiKey.startsWith("sk-")
-                ? "gpt-4o-mini"
-                : "qwen-plus");
+          if (body.action === "validate") {
+            const { apiKey, baseUrl, model, provider } = resolveConfig(body.apiKey, env);
+            if (!apiKey) {
+              send({ valid: false, error: "Chưa nhập key." });
+              return;
+            }
+            try {
+              const v = await validateKey(provider, baseUrl, apiKey);
+              send(
+                v.valid
+                  ? { valid: true, provider: provider.name, model }
+                  : { valid: false, error: v.error || "Key không hợp lệ." },
+              );
+            } catch (err) {
+              send({
+                valid: false,
+                error: err instanceof Error ? err.message : "Không kiểm tra được.",
+              });
+            }
+            return;
+          }
 
+          const { apiKey, baseUrl, model, provider } = resolveConfig(body.apiKey, env);
           if (!apiKey) {
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ mode: "not-configured" }));
+            send({ mode: "not-configured" });
             return;
           }
 
-          const systemPrompt = `Bạn là Cô Owly 🦉, trợ lý dạy tiếng Anh cho trẻ em 8-12 tuổi Việt Nam.
-Quy tắc:
-- Trả lời tối đa 80 từ, dùng tiếng Anh đơn giản + giải thích tiếng Việt.
-- KHÔNG bịa thông tin ngoài ngữ cảnh được cung cấp.
-- Nếu không biết, nói thẳng "Cô chưa có thông tin về điều này".
-- An toàn cho trẻ em, thân thiện, khích lệ.
-- Luôn gắn ví dụ tiếng Anh trong dấu ngoặc kép.`;
-
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 20000);
-
-          const response = await fetch(`${baseUrl}/chat/completions`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                { role: "system", content: systemPrompt },
-                {
-                  role: "user",
-                  content: `Ngữ cảnh từ giáo trình:\n${body.context || ""}\n\nCâu hỏi của bé: ${body.question || ""}`,
-                },
-              ],
-              max_tokens: 200,
-              temperature: 0.3,
-            }),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeout);
-
-          if (!response.ok) {
-            const errText = await response.text().catch(() => "");
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "application/json");
-            res.end(
-              JSON.stringify({
-                mode: "error",
-                error: `HTTP ${response.status}: ${errText.slice(0, 150)}`,
-              }),
-            );
+          const question = String(body.question || "").slice(0, 300);
+          const context = String(body.context || "").slice(0, 4000);
+          if (!question.trim()) {
+            send({ mode: "error", error: "empty question" });
             return;
           }
 
-          const json = (await response.json()) as {
-            choices?: Array<{ message?: { content?: string } }>;
-          };
-          const text = json.choices?.[0]?.message?.content ?? "";
-
-          res.statusCode = 200;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ mode: "llm", text }));
+          const r = await callChat(provider, baseUrl, model, apiKey, question, context);
+          send(r.ok ? { mode: "llm", text: r.text } : { mode: "error", error: r.error });
         } catch (err) {
-          res.statusCode = 200;
-          res.setHeader("Content-Type", "application/json");
-          res.end(
-            JSON.stringify({
-              mode: "error",
-              error: err instanceof Error ? err.message : "Unknown error",
-            }),
-          );
+          send({ mode: "error", error: err instanceof Error ? err.message : "Unknown error" });
         }
       });
     },

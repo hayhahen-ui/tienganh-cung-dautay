@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, ExternalLink } from "lucide-react";
+import { OxfordPictureSection } from "@/components/OxfordPictureSection";
 import {
   cambridgeDownloads,
   coursebooks,
@@ -84,7 +85,8 @@ function Curriculum() {
       <h2 className="mt-14 font-display text-3xl font-bold">🎯 Giáo trình chính theo từng cấp</h2>
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         {syllabus.map((s) => {
-          const lv = levels.find((l) => l.id === s.level)!;
+          const lv = levels.find((l) => l.id === s.level);
+          if (!lv) return null;
           return (
             <div key={s.level} className="card-pop p-5">
               <h3 className="font-display text-xl font-bold">
@@ -205,6 +207,9 @@ function Curriculum() {
           </li>
         ))}
       </ul>
+
+      {/* ── 8. Từ vựng tranh Oxford theo cấp độ ───────────────────────── */}
+      <OxfordPictureSection />
 
       <p className="mt-12 rounded-xl bg-success/15 p-4 text-sm font-semibold text-success">
         ✅ Cách dùng cùng app: bé học bài trong mục "Bài học" (mỗi bài đã ghi rõ bám giáo trình nào)

@@ -1,89 +1,47 @@
 /**
- * Vercel Serverless Function — proxy LLM cho "Hỏi cô Owly".
- * Giữ API key ở server. URL: /api/ask-owly
+ * Vercel Serverless Function — proxy LLM cho "Hỏi cô Owly". URL: /api/ask-owly
  *
- * Biến môi trường (Vercel → Settings → Environment Variables):
- *   OWLY_LLM_API_KEY   (bắt buộc để bật AI; không có → app chạy chế độ giáo trình)
+ * Đấu nối key theo mẫu mt5-mrbit-2026 (BYOK — bring your own key):
+ * - Ưu tiên key của user gửi kèm trong body (`apiKey`): ba mẹ dán key trong UI,
+ *   key lưu ở localStorage TRÊN MÁY CỦA BÉ, mỗi request gửi kèm — proxy chỉ
+ *   chuyển tiếp sang nhà cung cấp AI rồi quên ngay, KHÔNG lưu, KHÔNG log.
+ * - Không có key user → dùng key server (biến môi trường, cho admin).
+ * - Không có key nào → app chạy chế độ "📚 Giáo trình".
+ *
+ * Biến môi trường (Vercel → Settings → Environment Variables), tùy chọn:
+ *   OWLY_LLM_API_KEY   (key dự phòng của admin)
  *   OWLY_LLM_BASE_URL  (tùy chọn; tự suy ra từ dạng key nếu bỏ trống)
  *   OWLY_LLM_MODEL     (tùy chọn; tự chọn model mặc định theo nhà cung cấp)
  * Vẫn chấp nhận tên cũ VITE_OWLY_LLM_* để tương thích.
+ *
+ * Actions (POST JSON):
+ *   { question, context, apiKey? } → { mode: "llm", text } | { mode: "not-configured" } | { mode: "error", error }
+ *   { action: "validate", apiKey } → { valid: true, provider, model } | { valid: false, error }
+ * GET → { status: "ok", hasKey, provider, model } (chỉ phản ánh key server)
  */
+import { resolveConfig, callChat, validateKey, checkRateLimit } from "./_owly-proxy.js";
 
-const PROVIDERS = [
-  {
-    test: (k) => k.startsWith("gsk_"),
-    base: "https://api.groq.com/openai/v1",
-    model: "llama-3.3-70b-versatile",
-    name: "groq",
-  },
-  {
-    test: (k) => k.startsWith("sk-or-"),
-    base: "https://openrouter.ai/api/v1",
-    model: "openai/gpt-4o-mini",
-    name: "openrouter",
-  },
-  {
-    test: (k) => k.startsWith("sk-ant-"),
-    base: "https://api.anthropic.com/v1/",
-    model: "claude-3-5-haiku-latest",
-    name: "anthropic",
-  },
-  {
-    test: (k) => k.startsWith("AIza"),
-    base: "https://generativelanguage.googleapis.com/v1beta/openai",
-    model: "gemini-2.0-flash",
-    name: "gemini",
-  },
-  {
-    test: (k) => k.startsWith("sk-"),
-    base: "https://api.openai.com/v1",
-    model: "gpt-4o-mini",
-    name: "openai",
-  },
-  {
-    test: () => true,
-    base: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-    model: "qwen-plus",
-    name: "dashscope",
-  },
-];
-
-function config() {
-  const apiKey =
-    process.env.OWLY_LLM_API_KEY || process.env.VITE_OWLY_LLM_API_KEY || process.env.mrbit1 || "";
-  const p = PROVIDERS.find((x) => x.test(apiKey)) || PROVIDERS[PROVIDERS.length - 1];
-  const baseUrl = (
-    process.env.OWLY_LLM_BASE_URL ||
-    process.env.VITE_OWLY_LLM_BASE_URL ||
-    p.base
-  ).replace(/\/$/, "");
-  const model = process.env.OWLY_LLM_MODEL || process.env.VITE_OWLY_LLM_MODEL || p.model;
-  return { apiKey, baseUrl, model, provider: p.name };
+function clientIp(req) {
+  const fwd = req.headers["x-forwarded-for"];
+  if (typeof fwd === "string" && fwd) return fwd.split(",")[0].trim();
+  return (req.socket && req.socket.remoteAddress) || "unknown";
 }
 
-const SYSTEM_PROMPT = `Bạn là Cô Owly 🦉, trợ lý dạy tiếng Anh cho trẻ em 8-12 tuổi Việt Nam, theo chuẩn Cambridge YLE (Starters, Movers, Flyers).
-Quy tắc:
-- Trả lời tối đa 80 từ, tiếng Việt đơn giản, kèm từ/câu tiếng Anh trong dấu ngoặc kép, có phiên âm IPA nếu là từ vựng.
-- Ưu tiên dùng ngữ cảnh giáo trình được cung cấp; nếu câu hỏi là tra từ ngoài ngữ cảnh, vẫn trả lời đúng nghĩa tiếng Anh.
-- Không bịa link, không nói về chủ đề ngoài học tiếng Anh; nếu bé hỏi chuyện không phù hợp, nhẹ nhàng hướng về bài học.
-- An toàn cho trẻ em, thân thiện, khích lệ, xưng "cô" và gọi "bé".`;
-
 export default async function handler(req, res) {
-  const { apiKey, baseUrl, model, provider } = config();
-
   if (req.method === "GET") {
+    const { apiKey, model, provider } = resolveConfig("");
     return res.status(200).json({
       status: "ok",
       hasKey: !!apiKey,
-      provider: apiKey ? provider : null,
+      provider: apiKey ? provider.name : null,
       model: apiKey ? model : null,
     });
   }
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  if (!apiKey) {
-    return res.status(200).json({ mode: "not-configured" });
+  if (checkRateLimit(clientIp(req))) {
+    return res.status(200).json({ mode: "error", error: "Quá nhiều yêu cầu, bé đợi 1 phút nhé." });
   }
 
   let body = {};
@@ -92,48 +50,37 @@ export default async function handler(req, res) {
   } catch {
     body = {};
   }
+
+  // ── Validate key của user (nút "Kiểm tra kết nối" trong UI) ────────────
+  if (body.action === "validate") {
+    const { apiKey, baseUrl, model, provider } = resolveConfig(body.apiKey);
+    if (!apiKey) return res.status(200).json({ valid: false, error: "Chưa nhập key." });
+    try {
+      const v = await validateKey(provider, baseUrl, apiKey);
+      if (v.valid) return res.status(200).json({ valid: true, provider: provider.name, model });
+      return res.status(200).json({ valid: false, error: v.error || "Key không hợp lệ." });
+    } catch (err) {
+      return res.status(200).json({
+        valid: false,
+        error: err instanceof Error ? err.message : "Không kiểm tra được.",
+      });
+    }
+  }
+
+  // ── Chat ──────────────────────────────────────────────────────────────
+  const { apiKey, baseUrl, model, provider } = resolveConfig(body.apiKey);
+  if (!apiKey) {
+    return res.status(200).json({ mode: "not-configured" });
+  }
+
   const question = String(body.question || "").slice(0, 300);
   const context = String(body.context || "").slice(0, 4000);
   if (!question.trim()) return res.status(200).json({ mode: "error", error: "empty question" });
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8500);
-
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        ...(provider === "openrouter"
-          ? { "HTTP-Referer": "https://owly-english.app", "X-Title": "Owly English" }
-          : {}),
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          {
-            role: "user",
-            content: `Ngữ cảnh từ giáo trình:\n${context}\n\nCâu hỏi của bé: ${question}`,
-          },
-        ],
-        max_tokens: 220,
-        temperature: 0.3,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => "");
-      return res
-        .status(200)
-        .json({ mode: "error", error: `HTTP ${response.status}: ${errText.slice(0, 150)}` });
-    }
-    const json = await response.json();
-    const text = json.choices?.[0]?.message?.content ?? "";
-    return res.status(200).json({ mode: "llm", text });
+    const r = await callChat(provider, baseUrl, model, apiKey, question, context);
+    if (!r.ok) return res.status(200).json({ mode: "error", error: r.error });
+    return res.status(200).json({ mode: "llm", text: r.text });
   } catch (err) {
     const isAbort = err instanceof Error && err.name === "AbortError";
     return res.status(200).json({

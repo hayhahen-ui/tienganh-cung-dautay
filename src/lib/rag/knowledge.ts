@@ -22,6 +22,7 @@ import {
   examColours,
   type Lesson,
 } from "@/data/curriculum";
+import { oxfordPictureTopics, OXFORD_LEVEL_META } from "@/data/oxfordPicture";
 
 export type ChunkSource = {
   type:
@@ -272,6 +273,18 @@ function metaChunks(): Chunk[] {
         keywords: `${topic.title} ${pb.level} picture book chủ đề tranh topic`,
         source: { type: "vocab" as const, label: `${pb.level}: ${topic.title}` },
       });
+    });
+  });
+
+  // Từ vựng tranh Oxford Picture Dictionary theo cấp độ Starters/Movers/Flyers
+  oxfordPictureTopics.forEach((t) => {
+    const lv = OXFORD_LEVEL_META[t.level];
+    chunks.push({
+      id: `oxford-picture-${t.id}`,
+      text: `Từ vựng tranh Oxford (${lv.name}, nhóm "${t.unit}"): chủ đề "${t.title}" (${t.titleVi}). Từ vựng: ${t.vocab.join(", ")}.`,
+      keywords: `${t.title} ${t.titleVi} ${lv.name} oxford picture dictionary từ vựng tranh chủ đề topic ${t.unit}`,
+      source: { type: "vocab" as const, label: `🖼️ ${t.title}` },
+      level: t.level,
     });
   });
 

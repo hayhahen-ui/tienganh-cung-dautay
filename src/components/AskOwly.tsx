@@ -13,12 +13,14 @@ import {
   RotateCcw,
   Play,
   Square,
+  Settings,
 } from "lucide-react";
 import { retrieve } from "@/lib/rag/retriever";
 import { composeAnswer, type Answer } from "@/lib/rag/answerer";
 import { suggestedQuestions } from "@/lib/rag/knowledge";
-import { askLlm, checkLlm } from "@/lib/rag/ask-server";
+import { askLlm, isLlmOn } from "@/lib/rag/ask-server";
 import { speak } from "@/lib/speech";
+import { AiKeySettings } from "@/components/AiKeySettings";
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -69,20 +71,27 @@ export function AskOwly() {
   const [stats, setStats] = useState<TypingStats>(loadStats);
   const [llmStatus, setLlmStatus] = useState<"unknown" | "checking" | "on" | "off">("checking");
   const [llmError, setLlmError] = useState<string | null>(null);
+  const [keyDialogOpen, setKeyDialogOpen] = useState(false);
   const [chips, setChips] = useState<string[]>(() => pickRandom(suggestedQuestions, 4));
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const nextId = useRef(1);
 
-  // Kiểm tra AI đã cấu hình chưa (GET health-check, không tốn token)
+  const refreshLlmStatus = useCallback(() => {
+    setLlmStatus("checking");
+    void isLlmOn().then((on) => {
+      setLlmStatus(on ? "on" : "off");
+      if (on) setLlmError(null);
+    });
+  }, []);
+
+  // Kiểm tra AI đã bật chưa: key trên server HOẶC key ba mẹ đã lưu trên máy này.
+  // (GET health-check + localStorage — không tốn token, không gửi key đi đâu.)
   useEffect(() => {
     let active = true;
-    void checkLlm().then((h) => {
+    void isLlmOn().then((on) => {
       if (!active) return;
-      if (h?.hasKey) {
-        setLlmStatus("on");
-        setLlmError(null);
-      } else setLlmStatus("off");
+      setLlmStatus(on ? "on" : "off");
     });
     return () => {
       active = false;
@@ -151,11 +160,11 @@ export function AskOwly() {
               sources: localAnswer.sources,
             };
           } else {
+            // Lỗi tạm thời (mạng, hết quota, key sai) → giữ nguyên trạng thái
+            // badge, chỉ hiện lỗi; KHÔNG tắt AI hẳn vì key vẫn còn trên máy.
             if (llmResult.mode === "error") setLlmError(llmResult.error);
-            setLlmStatus("off");
           }
         } catch (err) {
-          setLlmStatus("off");
           setLlmError(err instanceof Error ? err.message : "Error calling LLM");
         }
       }
@@ -212,6 +221,15 @@ export function AskOwly() {
               {llmError}
             </span>
           )}
+          <button
+            type="button"
+            onClick={() => setKeyDialogOpen(true)}
+            title="Cài đặt AI — dán API key của ba mẹ"
+            aria-label="Cài đặt AI"
+            className="rounded-full border-2 border-border bg-card p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Settings className="size-3.5" />
+          </button>
           <span
             className={`rounded-full px-3 py-1 text-xs font-bold ${
               llmStatus === "on"
@@ -229,6 +247,12 @@ export function AskOwly() {
           </span>
         </div>
       </div>
+
+      <AiKeySettings
+        open={keyDialogOpen}
+        onOpenChange={setKeyDialogOpen}
+        onSaved={refreshLlmStatus}
+      />
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
