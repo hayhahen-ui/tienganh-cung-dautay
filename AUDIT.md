@@ -167,3 +167,18 @@ hạn deploy/ngày, free không ngủ), Vercel giữ làm **API backend** (`/api
 **Lưu ý:** key AI và XP trong localStorage tính theo origin → sang domain Render phải
 dán key lại 1 lần. Deploy Vercel mang CORS headers sẽ tự chạy sau khi hết trần 24h
 (nếu Vercel không tự retry, bấm Redeploy tay trên commit mới nhất).
+
+## G. Groq khai tử llama-3.3-70b-versatile — chat AI lỗi 404 model_not_found (19/10/2026, commit `ef3acbf`)
+**Hiện tượng:** user dán key Groq (hợp lệ) nhưng chat báo
+`HTTP 404: {"error":{"message":"The model 'llama-3.3-70b-versatile' does not exist..."}}`.
+**Nguyên nhân:** Groq ngừng phục vụ llama-3.3-70b-versatile cho gói Free/Developer từ
+16/08/2026 (chỉ còn Enterprise) — API trả 404 model_not_found cho key thường.
+**Fix trong `api/_owly-proxy.js`:**
+- Model mặc định Groq → `openai/gpt-oss-20b` (model thay thế chính thức Groq khuyến nghị)
+  + `fallbackModel: "openai/gpt-oss-120b"`.
+- `callChat` tách thành `singleChatAttempt`; gặp lỗi model_not_found tự thử model dự
+  phòng 1 lần, lỗi khác (401/429) không retry; hết cách → thông báo tiếng Việt thân
+  thiện thay vì JSON thô.
+- Test Node 3 kịch bản pass (retry fallback OK / lỗi thân thiện / 401 không retry).
+**Kiểm chứng production:** POST key giả lên API Vercel → trả 401 invalid_api_key
+(thay vì 404 model_not_found) = model mới đã live.
