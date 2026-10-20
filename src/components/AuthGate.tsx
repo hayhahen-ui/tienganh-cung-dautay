@@ -1,5 +1,6 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { signOut, useAuth } from "@/lib/auth";
+import { flushProgress } from "@/lib/progressSync";
 
 /** Trang public: khách thấy được mà không cần đăng nhập. */
 const PUBLIC_PATHS = new Set(["/", "/dang-nhap", "/setup"]);
@@ -33,6 +34,7 @@ function titleFor(pathname: string): string {
  */
 export function AuthGate() {
   const auth = useAuth();
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (!auth.configured) {
@@ -67,7 +69,36 @@ export function AuthGate() {
       />
     );
   }
-  if (auth.session) return <Outlet />;
+  if (auth.session && auth.profile) return <Outlet />;
+  if (auth.session && !auth.profile) {
+    // Đã đăng nhập được nhưng KHÔNG có hồ sơ Owly — ví dụ tài khoản của app
+    // khác (QuetDoc) khi dùng chung project Supabase. Chặn + cho đăng xuất.
+    return (
+      <div className="mx-auto max-w-md px-4 py-16">
+        <div className="rounded-3xl border-2 border-border bg-card p-8 text-center shadow-pop">
+          <h1 className="font-display text-2xl font-bold">Không phải tài khoản Owly</h1>
+          <div className="my-4 text-6xl" aria-hidden>
+            🚫
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Email {auth.session.user.email} không có hồ sơ học viên Owly English nên không mở được
+            nội dung. Hãy đăng xuất rồi đăng nhập bằng tài khoản Owly được cấp.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              await flushProgress();
+              await signOut();
+              void navigate({ to: "/dang-nhap" });
+            }}
+            className="mt-6 w-full rounded-full bg-primary px-6 py-3 font-display text-base font-bold text-primary-foreground"
+          >
+            🚪 Đăng xuất & đổi tài khoản
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <LockedPage
       title={titleFor(pathname)}

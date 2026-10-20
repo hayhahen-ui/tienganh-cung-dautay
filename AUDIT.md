@@ -315,3 +315,16 @@ pleased, because, owl, wise, help); 2 câu cũ không đổi/không hồi quy. T
   tạm sinh ngẫu nhiên hiện 1 lần trên màn hình setup/admin.
 **Test:** TSC/lint/build OK (routeTree regen ở build). E2E cần Supabase thật —
 chờ anh chạy SETUP-BAN-HANG.md (7 bước).
+
+## O. Cách ly Owly trong project dùng chung (20/10/2026, free plan)
+**Vấn đề:** free plan không tạo project Supabase mới được; project sẵn có là DB
+production của QuetDoc (directives, master_orders, packing_ranges, records).
+Nguy cơ: auth dùng chung → tài khoản 2 app lẫn nhau; thao tác nhầm chạm dữ liệu xưởng.
+**Fix (không cần project mới):**
+- Bảng đổi tên có tiền tố: `owly_profiles`, `owly_progress` (schema.sql tự dọn 2
+  bảng cũ CHỈ khi trống + đúng cột của Owly; KHÔNG CHẠM 4 bảng QuetDoc).
+- AuthGate: session mà không có owly_profiles → trang chặn "Không phải tài khoản
+  Owly" + nút đăng xuất (nhân viên quét tem không vào được).
+- progressSync: không có profile → bỏ qua push/pull (tránh vi phạm FK).
+- Admin API: list/delete/reset chỉ thao tác trên user có dòng trong owly_profiles.
+**Test:** TSC/lint/build OK. (Schema mới cần anh Run lại 1 lần trong SQL Editor.)

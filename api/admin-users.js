@@ -46,7 +46,7 @@ function serviceClient() {
 
 async function isSetupDone() {
   const { count, error } = await serviceClient()
-    .from("profiles")
+    .from("owly_profiles")
     .select("id", { count: "exact", head: true });
   if (error) throw new Error("Không đọc được bảng profiles: " + error.message);
   return (count ?? 0) > 0;
@@ -60,7 +60,7 @@ async function callerIsAdmin(req) {
   const { data, error } = await anonClient().auth.getUser(token);
   if (error || !data.user) return null;
   const { data: profile } = await serviceClient()
-    .from("profiles")
+    .from("owly_profiles")
     .select("role")
     .eq("id", data.user.id)
     .single();
@@ -82,7 +82,7 @@ async function createAccount({ email, password, role, kidName }) {
     user_metadata: { role },
   });
   if (error) throw new Error(`Không tạo được ${email}: ${error.message}`);
-  const { error: pErr } = await svc.from("profiles").insert({
+  const { error: pErr } = await svc.from("owly_profiles").insert({
     id: data.user.id,
     email,
     role,
@@ -189,7 +189,7 @@ export default async function handler(req, res) {
         (authUsers?.users ?? []).map((u) => [u.id, u.last_sign_in_at ?? null]),
       );
       const { data: profiles, error } = await svc
-        .from("profiles")
+        .from("owly_profiles")
         .select("id, email, role, kid_name, created_at")
         .order("created_at", { ascending: true });
       if (error) throw new Error(error.message);
@@ -244,7 +244,7 @@ export default async function handler(req, res) {
       if (body.kidName !== undefined)
         patch.kid_name = String(body.kidName).trim().slice(0, 30) || null;
       if (Object.keys(patch).length) {
-        const { error } = await svc.from("profiles").update(patch).eq("id", userId);
+        const { error } = await svc.from("owly_profiles").update(patch).eq("id", userId);
         if (error) throw new Error(error.message);
       }
       return res.status(200).json({ ok: true });
@@ -267,7 +267,7 @@ export default async function handler(req, res) {
       const userId = String(body.userId || "");
       if (!userId) return res.status(400).json({ ok: false, error: "Thiếu userId." });
       const { data, error } = await svc
-        .from("progress")
+        .from("owly_progress")
         .select("data, updated_at")
         .eq("user_id", userId)
         .maybeSingle();

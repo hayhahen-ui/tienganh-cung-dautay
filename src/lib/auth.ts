@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Owly English — Auth (bản thương mại)
-// Supabase Auth (email + mật khẩu) + bảng profiles (role admin/user, kid_name).
+// Supabase Auth (email + mật khẩu) + bảng owly_profiles (role admin/user, kid_name).
 // Session lưu sẵn trong localStorage bởi supabase-js. Trạng thái đăng nhập
 // quản lý theo mẫu module-store giống progress.ts (useSyncExternalStore).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ export function useAuth(): AuthSnapshot {
 async function loadProfile(userId: string): Promise<OwlyProfile | null> {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data, error } = await sb.from("profiles").select("*").eq("id", userId).single();
+  const { data, error } = await sb.from("owly_profiles").select("*").eq("id", userId).single();
   if (error) {
     console.warn("[auth] loadProfile", error.message);
     return null;
@@ -170,7 +170,7 @@ export async function updateMyKidName(
   if (!sb || !userId) return { ok: false, error: "Chưa đăng nhập." };
   const clean = kidName.trim().slice(0, 30);
   if (!clean) return { ok: false, error: "Tên bé không được để trống." };
-  const { error } = await sb.from("profiles").update({ kid_name: clean }).eq("id", userId);
+  const { error } = await sb.from("owly_profiles").update({ kid_name: clean }).eq("id", userId);
   if (error) return { ok: false, error: error.message };
   if (snapshot.profile) setSnapshot({ profile: { ...snapshot.profile, kid_name: clean } });
   return { ok: true };

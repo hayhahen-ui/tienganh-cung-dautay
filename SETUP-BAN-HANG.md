@@ -60,7 +60,7 @@
 - Không có chuyện "đăng ký tự do": chỉ admin tạo tài khoản → đúng mô hình bán.
 
 ## Ghi chú kỹ thuật
-- Tiến độ học: bảng `progress`, 1 dòng/user, đồng bộ cloud ↔ máy (debounce 6s, bản mới hơn thắng).
+- Tiến độ học: bảng `owly_progress`, 1 dòng/user, đồng bộ cloud ↔ máy (debounce 6s, bản mới hơn thắng).
 - Mọi thao tác nguy hiểm (tạo/xóa/đổi mật khẩu user khác) chạy qua `api/admin-users.js`
   bằng `service_role` ở phía server — frontend không bao giờ chạm vào key này.
 - Nếu chưa cấu hình Supabase, app chạy mở như cũ + banner cảnh báo (để không "chết" khi build thiếu env).

@@ -57,10 +57,12 @@ function hasMeaningfulData(p: ProgressState): boolean {
 async function pushNow(): Promise<boolean> {
   const sb = getSupabase();
   const uid = currentUserId;
-  if (!sb || !uid) return false;
+  // Tài khoản đăng nhập nhưng KHÔNG có hồ sơ Owly (vd tài khoản app khác
+  // dùng chung project) → không đồng bộ gì cả.
+  if (!sb || !uid || !getAuthSnapshot().profile) return false;
   const now = new Date().toISOString();
   const { error } = await sb
-    .from("progress")
+    .from("owly_progress")
     .upsert({ user_id: uid, data: getProgress(), updated_at: now });
   if (error) {
     console.warn("[sync] push", error.message);
@@ -92,10 +94,15 @@ export async function flushProgress() {
 async function pullAndMerge(userId: string) {
   const sb = getSupabase();
   if (!sb) return;
+  // Chờ profile nạp xong; không có hồ sơ Owly thì bỏ qua (tránh vi phạm FK).
+  for (let i = 0; i < 20 && !getAuthSnapshot().profile && getAuthSnapshot().session; i++) {
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  if (!getAuthSnapshot().profile) return;
   syncing = true;
   try {
     const { data, error } = await sb
-      .from("progress")
+      .from("owly_progress")
       .select("data, updated_at")
       .eq("user_id", userId)
       .maybeSingle();
