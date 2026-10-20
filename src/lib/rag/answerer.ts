@@ -259,22 +259,11 @@ function viFormsDia(vi: string): string[] {
 }
 
 /**
- * Bỏ cụm marker ngôn ngữ "tiếng anh"/"tieng anh" khỏi cụm cần dịch.
- * Cụm cần dịch mặc định LÀ dịch sang tiếng Anh, nên "tiếng anh" bên trong
- * (vd "học tiếng anh rất vui") chỉ là từ đệm — giữ lại khiến "anh" khớp nhầm
- * thành "brother" (từ điển có form "anh" tách từ "anh/em trai"). (20/10/2026)
- */
-function stripLangMarker(phrase: string): string {
-  const cleaned = phrase
-    .replace(/(^|\s)(tiếng anh|tieng anh)(?=\s|$)/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return cleaned.length >= 2 ? cleaned : phrase;
-}
-
-/**
  * Nhận diện ý định dịch Việt→Anh; trả về cụm tiếng Việt cần dịch (GIỮ DẤU) hoặc null.
  * Giữ dấu để "đậu" không bị nhầm với "đầu".
+ * LƯU Ý: KHÔNG cắt "tiếng anh" khỏi cụm — đó là nội dung dịch ("học tiếng anh" =
+ * study English), và từ điển đã có entry "tiếng Anh → English" nên greedy khớp
+ * 2 từ trước, không còn khớp nhầm "anh" → brother. (20/10/2026)
  */
 export function detectTranslationQuery(query: string): string | null {
   const qDia = query
@@ -297,10 +286,10 @@ export function detectTranslationQuery(query: string): string | null {
       const pw = phraseStrip.split(" ").filter(Boolean);
       for (let s = 0; s + pw.length <= stripWords.length; s++) {
         if (pw.every((w, k) => stripWords[s + k] === w)) {
-          return stripLangMarker(diaWords.slice(s, s + pw.length).join(" "));
+          return diaWords.slice(s, s + pw.length).join(" ");
         }
       }
-      return stripLangMarker(phraseStrip);
+      return phraseStrip;
     }
   }
   return null;
@@ -397,7 +386,7 @@ export function translatePhrase(phraseDia: string): TranslationHit[] {
   return hits;
 }
 
-function translationAnswer(hits: TranslationHit[]): Answer {
+function translationAnswer(hits: TranslationHit[], phraseDia?: string): Answer {
   const lines = hits.map((h) => `${h.entry.emoji} **${h.entry.word}** ${h.entry.ipa} — ${h.vi}`);
   const enWords = hits.map((h) => h.entry.word.split("/")[0]!.trim());
   const sources: AnswerSource[] = hits.map((h) =>
@@ -406,8 +395,15 @@ function translationAnswer(hits: TranslationHit[]): Answer {
       : { label: `${h.entry.emoji} ${h.entry.word}` },
   );
   const speakText = enWords.join(", ");
+  // Độ phủ: tỉ lệ từ của câu gốc được từ điển dịch. Phủ thấp → KHÔNG mạo danh
+  // đây là bản dịch cả câu (trước đây câu 11 từ chỉ dịch được 2 từ vẫn đề
+  // "Trong tiếng Anh:") — ghi rõ mới là một số từ. (20/10/2026)
+  const totalWords = phraseDia ? phraseDia.split(/\s+/).filter(Boolean).length : 0;
+  const matchedWords = hits.reduce((s, h) => s + h.vi.split(/\s+/).filter(Boolean).length, 0);
+  const partial = totalWords >= 4 && matchedWords / Math.max(totalWords, 1) < 0.6;
+  const header = partial ? "🌱 Một số từ trong câu của bé:" : "🌍 Trong tiếng Anh:";
   return {
-    text: `🌍 Trong tiếng Anh:\n${lines.join("\n")}\n\n💬 Bé đọc: "${speakText}"`,
+    text: `${header}\n${lines.join("\n")}\n\n💬 Bé đọc: "${speakText}"`,
     sources,
     speakText,
     typingChallenge: enWords[0] && enWords[0].length <= 20 ? enWords[0] : undefined,
@@ -464,7 +460,7 @@ export function composeAnswer(query: string, results: RetrievedChunk[]): Answer 
   const trPhrase = detectTranslationQuery(query);
   if (trPhrase) {
     const trHits = translatePhrase(trPhrase);
-    if (trHits.length > 0) return translationAnswer(trHits);
+    if (trHits.length > 0) return translationAnswer(trHits, trPhrase);
     // Không dịch được từ nào → rơi xuống luồng tra từ/RAG như cũ.
   }
 

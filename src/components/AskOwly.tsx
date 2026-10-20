@@ -143,20 +143,21 @@ export function AskOwly() {
             .slice(0, 3)
             .map((r) => r.chunk.text)
             .join("\n\n");
-          // Câu hỏi dịch Việt→Anh: ra lệnh AI ghép các từ đã dịch thành MỘT câu
-          // tiếng Anh hoàn chỉnh đúng ngữ pháp (trước đây AI lúc ghép lúc không,
-          // có lúc trả về trống → header "giải thích thêm" rỗng).
+          // Câu hỏi dịch Việt→Anh: lệnh AI dịch TOÀN BỘ câu gốc một cách tự
+          // nhiên, đầy đủ mọi mệnh đề. Danh sách từ điển chỉ là GỢI Ý tham khảo —
+          // lệnh cũ "ghép câu từ các từ đã dịch" khiến AI bỏ mất cả mệnh đề mà
+          // từ điển không có (vd "vì bé có cú thông thái hỗ trợ"). (20/10/2026)
           const trPhrase = detectTranslationQuery(q);
           const trWords = trPhrase
             ? translatePhrase(trPhrase).map((h) => h.entry.word.split("/")[0]!.trim())
             : [];
-          const llmQuestion =
-            trWords.length >= 2
-              ? `${q}\n\n[Yêu cầu bắt buộc: đây là câu hỏi dịch Việt→Anh. Các từ đã dịch: ${trWords.join(", ")}. Hãy ghép chúng thành MỘT câu tiếng Anh hoàn chỉnh, đúng ngữ pháp (thêm mạo từ a/the, chia động từ, sắp xếp đúng thứ tự từ), cho bé đọc câu đó, rồi giải thích ngắn gọn bằng tiếng Việt.]`
-              : q;
+          const isTranslation = !!trPhrase && trPhrase.split(/\s+/).filter(Boolean).length >= 2;
+          const llmQuestion = isTranslation
+            ? `${q}\n\n[Yêu cầu bắt buộc: Đây là câu hỏi dịch Việt→Anh. Hãy dịch TOÀN BỘ câu tiếng Việt "${trPhrase}" sang tiếng Anh một cách TỰ NHIÊN như người bản xứ và ĐẦY ĐỦ mọi ý — dịch hết từng mệnh đề, không bỏ sót phần nào. ${trWords.length ? `Từ gợi ý từ giáo trình: ${trWords.join(", ")} (chỉ tham khảo — hãy chọn bất cứ từ tiếng Anh nào đúng ngữ cảnh nhất, không bị giới hạn ở các từ gợi ý). ` : ""}Viết câu dịch hoàn chỉnh trong dấu ngoặc kép ở đầu câu trả lời, rồi giải thích ngắn gọn bằng tiếng Việt.]`
+            : q;
           let llmResult = await askLlm({ data: { question: llmQuestion, context } });
           // AI trả về rỗng → thử lại 1 lần trước khi bỏ cuộc.
-          if (llmResult.mode === "llm" && !(llmResult.text || "").trim() && trWords.length >= 2) {
+          if (llmResult.mode === "llm" && !(llmResult.text || "").trim() && isTranslation) {
             llmResult = await askLlm({ data: { question: llmQuestion, context } });
           }
 
@@ -173,7 +174,7 @@ export function AskOwly() {
               // RAG không tìm thấy → dùng thẳng câu trả lời AI.
               text: localAnswer.corrective
                 ? `🤖 ${llmResult.text}`
-                : `${localAnswer.text}\n\n🤖 **Cô Owly giải thích thêm:** ${llmResult.text}`,
+                : `${localAnswer.text}\n\n🤖 **${isTranslation ? "Cô Owly dịch cả câu" : "Cô Owly giải thích thêm"}:** ${llmResult.text}`,
               speakText: extractFirstEnglish(llmResult.text) || localAnswer.speakText,
               corrective: false,
               // Keep RAG sources if they exist, otherwise empty

@@ -3806,6 +3806,35 @@ export const yleDictionary: DictWord[] = [
   { en: "always", vi: "luôn luôn", ipa: "/ˈɔːlweɪz/", emoji: "🔄", theme: "Time", level: "movers" },
   { en: "before", vi: "trước", ipa: "/bɪˈfɔː(r)/", emoji: "⏪", theme: "Time", level: "movers" },
   { en: "every", vi: "mỗi, mọi", ipa: "/ˈevri/", emoji: "🔄", theme: "Time", level: "movers" },
+  // Từ cơ bản hay gặp trong câu dịch của bé (bổ sung 20/10/2026) —
+  // "English" (tiếng Anh) còn để greedy khớp 2 từ "tiếng anh" trước form "anh"
+  // đơn lẻ (chặn khớp nhầm thành brother).
+  {
+    en: "English",
+    vi: "tiếng Anh",
+    ipa: "/ˈɪŋɡlɪʃ/",
+    emoji: "🗣️",
+    theme: "At school",
+    level: "starters",
+  },
+  { en: "very", vi: "rất", ipa: "/ˈveri/", emoji: "💯", theme: "Time", level: "starters" },
+  { en: "owl", vi: "con cú, cú", ipa: "/aʊl/", emoji: "🦉", theme: "Animals", level: "starters" },
+  {
+    en: "help",
+    vi: "giúp đỡ, hỗ trợ",
+    ipa: "/help/",
+    emoji: "🤝",
+    theme: "Work",
+    level: "starters",
+  },
+  {
+    en: "wise",
+    vi: "thông thái, khôn ngoan",
+    ipa: "/waɪz/",
+    emoji: "🧠",
+    theme: "The world around us",
+    level: "flyers",
+  },
   {
     en: "never",
     vi: "không bao giờ",

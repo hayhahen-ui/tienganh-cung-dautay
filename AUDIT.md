@@ -267,3 +267,23 @@ người bản địa.
   onEnd để reset UI) + export `stopSpeaking()`.
 - Bấm từng từ riêng lẻ giữ nguyên (đó là tính năng học phát âm 1 từ).
 **Test:** TSC/lint/build OK. (Audio cần test tai nghe trên production.)
+
+## M. Dịch nguyên câu phải đầy đủ và tự nhiên (20/10/2026)
+**Hiện tượng:** câu "học tiếng anh rất vui, vì bé có cú thông thái hỗ trợ"
+từ điển chỉ dịch được 2 từ (study, pleased) nhưng vẫn đề "Trong tiếng Anh:"
+như thể đó là bản dịch; AI bị lệnh cũ "ghép câu từ các từ đã dịch" trói nên
+dịch "I am pleased to study English." — BỎ MẤT cả mệnh đề sau.
+**Fix:**
+- `AskOwly.tsx`: lệnh AI đổi thành "dịch TOÀN BỘ câu, từ điển chỉ là GỢI Ý
+  tham khảo (không bị giới hạn), dịch hết từng mệnh đề, chọn từ theo ngữ cảnh
+  tự nhiên"; header AI khi dịch → "🤖 Cô Owly dịch cả câu:".
+- `api/_owly-proxy.js`: SYSTEM_PROMPT luật dịch cùng tinh thần (vd "học tiếng
+  Anh rất vui" → "Learning English is very fun").
+- `answerer.ts`: translationAnswer thêm độ phủ (matched/total < 0.6 → header
+  "🌱 Một số từ trong câu của bé:" thay vì mạo danh bản dịch). Bỏ
+  stripLangMarker (nó cắt mất chữ "English" — nội dung dịch thật).
+- Từ điển bổ sung: English (tiếng Anh — greedy 2 từ thắng form "anh" đơn lẻ,
+  hết khớp nhầm brother), owl (con cú), very, help (giúp đỡ, hỗ trợ), wise
+  (thông thái); lessons/core.ts: because thêm form "vì".
+**Test:** esbuild 3 câu thật — câu trong ảnh 10/11 từ (study, English, very,
+pleased, because, owl, wise, help); 2 câu cũ không đổi/không hồi quy. TSC/lint/build OK.

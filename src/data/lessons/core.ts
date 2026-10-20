@@ -520,7 +520,7 @@ export const coreLessons: Lesson[] = [
     video: { youtubeId: "B8SX7AABWmI", title: "How To Write a Story For Kids" },
     vocab: [
       { word: "suddenly", ipa: "/ˈsʌdnli/", vi: "đột nhiên", emoji: "⚡" },
-      { word: "because", ipa: "/bɪˈkɒz/", vi: "bởi vì", emoji: "🔗" },
+      { word: "because", ipa: "/bɪˈkɒz/", vi: "bởi vì, vì", emoji: "🔗" },
       { word: "excited", ipa: "/ɪkˈsaɪtɪd/", vi: "phấn khích", emoji: "🤩" },
       { word: "worried", ipa: "/ˈwʌrid/", vi: "lo lắng", emoji: "😟" },
       { word: "finally", ipa: "/ˈfaɪnəli/", vi: "cuối cùng", emoji: "🏁" },
