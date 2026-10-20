@@ -10,12 +10,16 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BaMeRouteImport } from './routes/ba-me'
+import { Route as DangNhapRouteImport } from './routes/dang-nhap'
 import { Route as GiaoTrinhRouteImport } from './routes/giao-trinh'
 import { Route as HoiDapRouteImport } from './routes/hoi-dap'
 import { Route as KiemTraRouteImport } from './routes/kiem-tra'
 import { Route as LoTrinhRouteImport } from './routes/lo-trinh'
 import { Route as OnTapRouteImport } from './routes/on-tap'
+import { Route as SetupRouteImport } from './routes/setup'
+import { Route as TaiKhoanRouteImport } from './routes/tai-khoan'
 import { Route as TienDoRouteImport } from './routes/tien-do'
 import { Route as BaiHocIndexRouteImport } from './routes/bai-hoc.index'
 import { Route as BaiHocSlugRouteImport } from './routes/bai-hoc.$slug'
@@ -25,9 +29,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BaMeRoute = BaMeRouteImport.update({
   id: '/ba-me',
   path: '/ba-me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DangNhapRoute = DangNhapRouteImport.update({
+  id: '/dang-nhap',
+  path: '/dang-nhap',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GiaoTrinhRoute = GiaoTrinhRouteImport.update({
@@ -55,6 +69,16 @@ const OnTapRoute = OnTapRouteImport.update({
   path: '/on-tap',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TaiKhoanRoute = TaiKhoanRouteImport.update({
+  id: '/tai-khoan',
+  path: '/tai-khoan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TienDoRoute = TienDoRouteImport.update({
   id: '/tien-do',
   path: '/tien-do',
@@ -73,24 +97,32 @@ const BaiHocSlugRoute = BaiHocSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/ba-me': typeof BaMeRoute
+  '/dang-nhap': typeof DangNhapRoute
   '/giao-trinh': typeof GiaoTrinhRoute
   '/hoi-dap': typeof HoiDapRoute
   '/kiem-tra': typeof KiemTraRoute
   '/lo-trinh': typeof LoTrinhRoute
   '/on-tap': typeof OnTapRoute
+  '/setup': typeof SetupRoute
+  '/tai-khoan': typeof TaiKhoanRoute
   '/tien-do': typeof TienDoRoute
   '/bai-hoc/$slug': typeof BaiHocSlugRoute
   '/bai-hoc/': typeof BaiHocIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/ba-me': typeof BaMeRoute
+  '/dang-nhap': typeof DangNhapRoute
   '/giao-trinh': typeof GiaoTrinhRoute
   '/hoi-dap': typeof HoiDapRoute
   '/kiem-tra': typeof KiemTraRoute
   '/lo-trinh': typeof LoTrinhRoute
   '/on-tap': typeof OnTapRoute
+  '/setup': typeof SetupRoute
+  '/tai-khoan': typeof TaiKhoanRoute
   '/tien-do': typeof TienDoRoute
   '/bai-hoc/$slug': typeof BaiHocSlugRoute
   '/bai-hoc': typeof BaiHocIndexRoute
@@ -98,12 +130,16 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/ba-me': typeof BaMeRoute
+  '/dang-nhap': typeof DangNhapRoute
   '/giao-trinh': typeof GiaoTrinhRoute
   '/hoi-dap': typeof HoiDapRoute
   '/kiem-tra': typeof KiemTraRoute
   '/lo-trinh': typeof LoTrinhRoute
   '/on-tap': typeof OnTapRoute
+  '/setup': typeof SetupRoute
+  '/tai-khoan': typeof TaiKhoanRoute
   '/tien-do': typeof TienDoRoute
   '/bai-hoc/$slug': typeof BaiHocSlugRoute
   '/bai-hoc/': typeof BaiHocIndexRoute
@@ -112,36 +148,48 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/ba-me'
+    | '/dang-nhap'
     | '/giao-trinh'
     | '/hoi-dap'
     | '/kiem-tra'
     | '/lo-trinh'
     | '/on-tap'
+    | '/setup'
+    | '/tai-khoan'
     | '/tien-do'
     | '/bai-hoc/$slug'
     | '/bai-hoc/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/ba-me'
+    | '/dang-nhap'
     | '/giao-trinh'
     | '/hoi-dap'
     | '/kiem-tra'
     | '/lo-trinh'
     | '/on-tap'
+    | '/setup'
+    | '/tai-khoan'
     | '/tien-do'
     | '/bai-hoc/$slug'
     | '/bai-hoc'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/ba-me'
+    | '/dang-nhap'
     | '/giao-trinh'
     | '/hoi-dap'
     | '/kiem-tra'
     | '/lo-trinh'
     | '/on-tap'
+    | '/setup'
+    | '/tai-khoan'
     | '/tien-do'
     | '/bai-hoc/$slug'
     | '/bai-hoc/'
@@ -149,12 +197,16 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   BaMeRoute: typeof BaMeRoute
+  DangNhapRoute: typeof DangNhapRoute
   GiaoTrinhRoute: typeof GiaoTrinhRoute
   HoiDapRoute: typeof HoiDapRoute
   KiemTraRoute: typeof KiemTraRoute
   LoTrinhRoute: typeof LoTrinhRoute
   OnTapRoute: typeof OnTapRoute
+  SetupRoute: typeof SetupRoute
+  TaiKhoanRoute: typeof TaiKhoanRoute
   TienDoRoute: typeof TienDoRoute
   BaiHocSlugRoute: typeof BaiHocSlugRoute
   BaiHocIndexRoute: typeof BaiHocIndexRoute
@@ -169,11 +221,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ba-me': {
       id: '/ba-me'
       path: '/ba-me'
       fullPath: '/ba-me'
       preLoaderRoute: typeof BaMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dang-nhap': {
+      id: '/dang-nhap'
+      path: '/dang-nhap'
+      fullPath: '/dang-nhap'
+      preLoaderRoute: typeof DangNhapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/giao-trinh': {
@@ -211,6 +277,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnTapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tai-khoan': {
+      id: '/tai-khoan'
+      path: '/tai-khoan'
+      fullPath: '/tai-khoan'
+      preLoaderRoute: typeof TaiKhoanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tien-do': {
       id: '/tien-do'
       path: '/tien-do'
@@ -237,12 +317,16 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   BaMeRoute: BaMeRoute,
+  DangNhapRoute: DangNhapRoute,
   GiaoTrinhRoute: GiaoTrinhRoute,
   HoiDapRoute: HoiDapRoute,
   KiemTraRoute: KiemTraRoute,
   LoTrinhRoute: LoTrinhRoute,
   OnTapRoute: OnTapRoute,
+  SetupRoute: SetupRoute,
+  TaiKhoanRoute: TaiKhoanRoute,
   TienDoRoute: TienDoRoute,
   BaiHocSlugRoute: BaiHocSlugRoute,
   BaiHocIndexRoute: BaiHocIndexRoute,

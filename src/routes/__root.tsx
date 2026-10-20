@@ -1,7 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Outlet, Link, createRootRouteWithContext, useRouter } from "@tanstack/react-router";
+import { Link, createRootRouteWithContext, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { SiteNav } from "../components/SiteNav";
+import { AuthGate } from "../components/AuthGate";
+import { initAuth } from "../lib/auth";
+import { initProgressSync } from "../lib/progressSync";
 
 function NotFoundComponent() {
   return (
@@ -69,11 +73,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    initAuth();
+    initProgressSync();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <SiteNav />
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {/* AuthGate renders <Outlet /> for public/logged-in routes and a locked
+          page (title only) for guests — bản thương mại. */}
+      <AuthGate />
       <footer className="mt-16 border-t-2 border-border py-8 text-center text-sm text-muted-foreground">
         🦉 Owly English — đồng hành cùng bé theo lộ trình Cambridge YLE: Starters → Movers → Flyers
       </footer>

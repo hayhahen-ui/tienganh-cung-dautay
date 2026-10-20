@@ -1,6 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { VoiceSettings } from "./VoiceSettings";
 import { dueCards, rankFor, useProgress } from "@/lib/progress";
+import { signOut, useAuth } from "@/lib/auth";
+import { flushProgress } from "@/lib/progressSync";
 
 const items = [
   { to: "/", label: "Trang chủ" },
@@ -14,8 +16,17 @@ const items = [
 
 export function SiteNav() {
   const p = useProgress();
+  const auth = useAuth();
+  const navigate = useNavigate();
   const due = dueCards(p, 99).length;
   const rank = rankFor(p.xp);
+
+  const doLogout = async () => {
+    await flushProgress();
+    await signOut();
+    void navigate({ to: "/" });
+  };
+
   return (
     <header className="sticky top-0 z-30 border-b-2 border-border bg-background/85 backdrop-blur">
       <nav
@@ -49,6 +60,7 @@ export function SiteNav() {
           className="inline-flex items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 py-1 text-sm font-bold"
           activeProps={{ className: "border-primary" }}
           aria-label="Xem tiến độ"
+          style={{ display: auth.session || !auth.configured ? undefined : "none" }}
         >
           <span aria-hidden>{p.avatar}</span>
           <span>{p.xp} XP</span>
@@ -56,6 +68,43 @@ export function SiteNav() {
           <span>🔥 {p.streak.count}</span>
           <span className="hidden text-xs text-muted-foreground sm:inline">· {rank.name}</span>
         </Link>
+        {auth.configured && !auth.session ? (
+          <Link
+            to="/dang-nhap"
+            className="rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground"
+          >
+            🔑 Đăng nhập
+          </Link>
+        ) : (
+          auth.session && (
+            <>
+              {auth.profile?.role === "admin" && (
+                <Link
+                  to="/admin"
+                  className="rounded-full border-2 border-violet-300 bg-violet-100 px-3 py-1 text-sm font-bold text-violet-900"
+                  title="Quản trị tài khoản"
+                >
+                  🛠️
+                </Link>
+              )}
+              <Link
+                to="/tai-khoan"
+                className="inline-flex max-w-36 items-center gap-1 truncate rounded-full border-2 border-border bg-card px-3 py-1 text-sm font-bold"
+                title="Tài khoản"
+              >
+                🧒 {auth.profile?.kid_name || "Bé học"}
+              </Link>
+              <button
+                type="button"
+                onClick={() => void doLogout()}
+                className="rounded-full border-2 border-border px-3 py-1 text-sm font-bold text-muted-foreground hover:text-destructive"
+                title="Đăng xuất"
+              >
+                🚪
+              </button>
+            </>
+          )
+        )}
         <VoiceSettings compact />
       </nav>
     </header>

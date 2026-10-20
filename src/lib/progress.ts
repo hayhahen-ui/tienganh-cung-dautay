@@ -398,6 +398,14 @@ export function setProfile(p: { name?: string; avatar?: string }) {
   });
 }
 
+/**
+ * Thay toàn bộ state tiến độ (dùng khi nạp tiến độ từ cloud sau đăng nhập).
+ * Không merge từng field — bản mới hơn thắng hoàn toàn.
+ */
+export function replaceProgress(next: ProgressState) {
+  persist({ ...defaultState(), ...next, version: 1 });
+}
+
 export function resetProgress() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(KEY);

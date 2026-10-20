@@ -287,3 +287,31 @@ dịch "I am pleased to study English." — BỎ MẤT cả mệnh đề sau.
   (thông thái); lessons/core.ts: because thêm form "vì".
 **Test:** esbuild 3 câu thật — câu trong ảnh 10/11 từ (study, English, very,
 pleased, because, owl, wise, help); 2 câu cũ không đổi/không hồi quy. TSC/lint/build OK.
+
+## N. Bản thương mại: tài khoản + phân quyền + tiến độ theo user (20/10/2026)
+**Yêu cầu:** web bán hàng — admin + 5 user; admin quản lý toàn diện user
+(tạo/xóa/đặt lại mật khẩu/xem tiến độ); user chỉ đổi MK của mình + đổi tên bé
++ học với tiến độ lưu riêng; khách chưa đăng nhập chỉ thấy tiêu đề, nội dung khóa.
+**Kiến trúc:** Supabase mới (Auth + Postgres). Không tự đăng ký public — chỉ admin tạo.
+- `supabase/schema.sql`: bảng profiles (id→auth.users, role, kid_name) + progress
+  (user_id PK, data JSONB, updated_at); RLS qua hàm is_admin() SECURITY DEFINER
+  (tránh đệ quy); admin đọc all, user chỉ của mình.
+- `src/lib/auth.ts`: Supabase client (VITE_ env), module-store session/profile,
+  signIn/signOut/changeMyPassword/updateMyKidName, adminApi (JWT) + publicApi
+  (cho /setup, không JWT). Không env → configured=false, app mở như cũ + banner.
+- `src/lib/progressSync.ts`: cloud = bản gốc, local = cache; pull/push
+  last-write-wins theo updated_at (debounce 6s); logout → flush rồi reset local.
+  progress.ts thêm replaceProgress().
+- `api/admin-users.js`: service_role CHỈ ở server. Actions: status (public),
+  bootstrap (token OWLY_SETUP_TOKEN + chưa setup lần nào → tạo admin theo
+  email/MK user nhập + N user với mật khẩu ngẫu nhiên trả 1 lần),
+  list/create/resetPassword/updateUser/deleteUser/progress (JWT admin).
+  resetPassword/deleteUser chặn thao tác lên chính mình.
+- Routes: /dang-nhap, /setup (tự khóa sau khi xong), /admin (bảng user +
+  tạo/xóa/đổi MK/sửa tên bé/xem tiến độ), /tai-khoan (đổi tên bé, đổi MK mình,
+  xem tiến độ, đăng xuất). AuthGate trong __root: khách thấy tiêu đề + khóa 🔒;
+  /admin chỉ admin. SiteNav: nút đăng nhập/tên bé/🛠️ theo role.
+- Mật khẩu: KHÔNG bao giờ qua chat — admin nhập trong form (HTTPS), mật khẩu
+  tạm sinh ngẫu nhiên hiện 1 lần trên màn hình setup/admin.
+**Test:** TSC/lint/build OK (routeTree regen ở build). E2E cần Supabase thật —
+chờ anh chạy SETUP-BAN-HANG.md (7 bước).
