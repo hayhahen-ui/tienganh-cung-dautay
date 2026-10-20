@@ -20,11 +20,13 @@
 - Mở file `supabase/schema.sql` trong repo, **copy toàn bộ**, dán vào, bấm **Run**.
 - Kết quả: 2 bảng `profiles`, `progress` + chính sách bảo mật (RLS).
 
-### Bước 3 — Lấy 3 chìa khóa
-- Supabase Dashboard → **Project Settings** → **API**:
-  - `Project URL` → dùng cho `SUPABASE_URL` / `VITE_SUPABASE_URL`
-  - `anon public` key → dùng cho `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY`
-  - `service_role` key → dùng cho `SUPABASE_SERVICE_ROLE_KEY` (**giữ bí mật tuyệt đối**)
+### Bước 3 — Lấy 3 chìa khóa (của ĐÚNG project đã chạy SQL)
+- Supabase Dashboard → **Project Settings** → **API Keys**:
+  - `Project URL` = `https://<ref>.supabase.co` (ref trên thanh địa chỉ) → dùng cho `SUPABASE_URL` / `VITE_SUPABASE_URL`
+  - **Publishable key** (`sb_publishable_…`) → dùng cho `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY`
+  - **Secret key** (`sb_secret_…`, bấm 👁 để hiện) → dùng cho `SUPABASE_SERVICE_ROLE_KEY` (**giữ bí mật tuyệt đối**)
+- Lưu ý: bảng Owly dùng tiền tố `owly_` (`owly_profiles`, `owly_progress`, hàm `owly_is_admin`) —
+  cách ly hoàn toàn với các app khác dùng chung project.
 
 ### Bước 4 — Đặt biến môi trường trên Render (frontend)
 - Render Dashboard → site `tienganh-cung-dautay` → **Environment** → thêm:
