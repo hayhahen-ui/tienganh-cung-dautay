@@ -331,7 +331,7 @@ Nguy cơ: auth dùng chung → tài khoản 2 app lẫn nhau; thao tác nhầm c
 
 ## P. Sự cố SQL trên DB QuetDoc + khôi phục (20/10/2026)
 **Diễn biến:** free plan không tạo project mới → anh dùng project sẵn có = DB
-production của **QuetDoc** (cdxoaoemnidwuzentxc). Project này ĐÃ có bảng
+production của **QuetDoc** (cdxoaoemnidwuzentxrc). Project này ĐÃ có bảng
 `profiles` (id/username/role của nhân viên quét tem) + function `is_admin()`
 của QuetDoc. Lần Run đầu: create-table bị bỏ qua (đã có), `create or replace
 is_admin()` GHI ĐÈ function của QuetDoc (cùng logic role='admin' nên phân quyền
@@ -348,3 +348,19 @@ có cột data (của Owly); tạo `owly_profiles`/`owly_progress` + hàm riêng
 `owly_is_admin()` + policy owly_*. Bài học: trước khi chạy DDL trên DB lạ, PHẢI
 kiểm kê bảng/function sẵn có — tên generic (profiles/progress/is_admin) rất
 dễ trùng app khác.
+
+## Q. Sự cố ENOTFOUND khi đấu nối Admin API Render (20/10/2026)
+**Triệu chứng:** service Render `owly-admin-api` gọi Supabase báo
+`TypeError: fetch failed`, cause `ENOTFOUND`. Endpoint `/diag` tạm thời cho thấy
+env đủ 4 biến, host trông "đúng" — nhưng tra Google DNS-over-HTTPS: tên
+`cdxoaoemnidwuzentxc.supabase.co` trả **NXDOMAIN** toàn cục.
+**Nguyên nhân gốc:** ref thật của project là `cdxoaoemnidwuzentxrc` (21 ký tự,
+có chữ "r" cuối) — bằng chứng: URL Supabase ngay trong code QuetDoc đang chạy
+production. Assistant đọc thiếu chữ "r" từ ảnh chụp dashboard rồi đưa URL sai
+(`...zentxc`) cho user dán vào env ở cả 3 nơi (Render frontend, Vercel, service
+Render). Key hoàn toàn đúng — chỉ sai host. Sửa env thêm "r" → `/diag` 200 cả
+hai đường, `status` trả `{ok:true, setupDone:false}`. `/diag` đã gỡ sau khi
+thông. **Bài học:** KHÔNG chép ref/host từ ảnh chụp màn hình — luôn đối chiếu
+URL trong code đang chạy production hoặc copy trực tiếp từ trang Settings →
+Project URL; khi gặp ENOTFOUND, tra DNS-over-HTTPS để phân biệt "host không
+tồn tại" với "mạng bị chặn".
