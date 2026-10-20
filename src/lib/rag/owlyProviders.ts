@@ -82,7 +82,7 @@ export const OWLY_PROVIDERS: OwlyProviderMeta[] = [
  */
 export function detectOwlyProvider(apiKey: string): OwlyProviderMeta {
   const k = apiKey.trim();
-  if (k.startsWith("lrsk_")) return OWLY_PROVIDERS[0]!;
+  if (k.startsWith("lrsk-") || k.startsWith("lrsk_")) return OWLY_PROVIDERS[0]!;
   if (k.startsWith("gsk_")) return OWLY_PROVIDERS[1]!;
   if (k.startsWith("sk-or-")) return OWLY_PROVIDERS[3]!;
   if (k.startsWith("sk-ant-")) return OWLY_PROVIDERS[5]!;

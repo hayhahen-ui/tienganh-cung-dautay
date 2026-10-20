@@ -53,7 +53,7 @@ const PROVIDERS = [
   },
   {
     id: "larprouter",
-    test: (k) => k.startsWith("lrsk_"),
+    test: (k) => k.startsWith("lrsk-") || k.startsWith("lrsk_"),
     base: "https://larprouter.com/v1",
     model: "deepseek-v4.1-flash",
     fallbackModel: "glm-5.3-flash",
