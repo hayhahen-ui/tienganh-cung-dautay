@@ -328,3 +328,23 @@ Nguy cơ: auth dùng chung → tài khoản 2 app lẫn nhau; thao tác nhầm c
 - progressSync: không có profile → bỏ qua push/pull (tránh vi phạm FK).
 - Admin API: list/delete/reset chỉ thao tác trên user có dòng trong owly_profiles.
 **Test:** TSC/lint/build OK. (Schema mới cần anh Run lại 1 lần trong SQL Editor.)
+
+## P. Sự cố SQL trên DB QuetDoc + khôi phục (20/10/2026)
+**Diễn biến:** free plan không tạo project mới → anh dùng project sẵn có = DB
+production của **QuetDoc** (cdxoaoemnidwuzentxc). Project này ĐÃ có bảng
+`profiles` (id/username/role của nhân viên quét tem) + function `is_admin()`
+của QuetDoc. Lần Run đầu: create-table bị bỏ qua (đã có), `create or replace
+is_admin()` GHI ĐÈ function của QuetDoc (cùng logic role='admin' nên phân quyền
+không đổi) + thêm policy `profiles_own`, `profiles_admin_all` + 2 index lên
+profiles QuetDoc + tạo bảng `progress` (Owly). Lần Run 2 lỗi `2BP01` (không drop
+được is_admin vì policies của records/directives/master_orders/packing_ranges
+phụ thuộc) → dừng, chưa tạo bảng owly_*.
+**Xác minh:** profiles QuetDoc còn nguyên 6 tài khoản (count = 6); không lệnh
+DML nào chạm dữ liệu; is_admin bản bị ghi đè có logic HỆT bản gốc (đối chiếu
+`quetdoc-Qrcode/docs/supabase-setup.sql` dòng 30).
+**Khôi phục (schema.sql bản mới):** tạo lại is_admin đúng nguyên bản (kèm
+`stable`); drop 2 policy + 2 index thừa; drop bảng progress CHỈ khi trống +
+có cột data (của Owly); tạo `owly_profiles`/`owly_progress` + hàm riêng
+`owly_is_admin()` + policy owly_*. Bài học: trước khi chạy DDL trên DB lạ, PHẢI
+kiểm kê bảng/function sẵn có — tên generic (profiles/progress/is_admin) rất
+dễ trùng app khác.
