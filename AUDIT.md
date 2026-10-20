@@ -182,3 +182,19 @@ dán key lại 1 lần. Deploy Vercel mang CORS headers sẽ tự chạy sau khi
 - Test Node 3 kịch bản pass (retry fallback OK / lỗi thân thiện / 401 không retry).
 **Kiểm chứng production:** POST key giả lên API Vercel → trả 401 invalid_api_key
 (thay vì 404 model_not_found) = model mới đã live.
+
+## H. Chuyển API sang Cloudflare Workers — bỏ phụ thuộc Vercel (20/10/2026)
+**Lý do:** user yêu cầu "không phụ thuộc vào việc deploy Vercel, chỉ cần deploy
+Render là chạy". Vercel free chạm trần 100 deploys/ngày liên tục trong ngày 19/10,
+API kẹt theo.
+**Triển khai:**
+- `worker/ask-owly-worker.js` mới: Cloudflare Worker dùng chung logic
+  `api/_owly-proxy.js` (resolveConfig/callChat/validateKey/checkRateLimit) —
+  key user chỉ chuyển tiếp, không lưu/log. API tương thích 1:1 với bản Vercel
+  (GET health, POST validate, POST chat, CORS *, rate-limit 30 req/phút/IP).
+- `wrangler.toml`: deploy bằng Cloudflare dashboard → Workers & Pages → Connect Git.
+- Test Node 5 kịch bản pass (OPTIONS/CORS, GET health, validate key giả → 401,
+  chat không key → not-configured, chat key giả → 401 và KHÔNG còn model_not_found).
+- `render.yaml`: VITE_OWLY_API_URL trỏ sang worker (đổi URL thật sau khi user deploy).
+**Sau khi user deploy worker:** đổi VITE_OWLY_API_URL trong Render dashboard →
+Environment → rebuild. Vercel giữ nguyên trong repo nhưng không còn dùng.

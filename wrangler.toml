@@ -1,0 +1,9 @@
+# wrangler.toml — Cloudflare Worker "owly-ask-api": proxy LLM cho "Hỏi cô Owly".
+# Thay thế api/ask-owly.js trên Vercel (Vercel free giới hạn 100 deployments/ngày).
+# Deploy: Cloudflare dashboard → Workers & Pages → Create → Connect Git → chọn repo
+# hayhahen-ui/tienganh-cung-dautay → Cloudflare tự đọc file này và deploy.
+# Không cần secret (BYOK: key của user gửi kèm mỗi request; muốn key server dự phòng
+# thì thêm biến OWLY_LLM_API_KEY trong dashboard Worker → Settings → Variables).
+name = "owly-ask-api"
+main = "worker/ask-owly-worker.js"
+compatibility_date = "2025-01-01"

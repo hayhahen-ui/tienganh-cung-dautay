@@ -1,8 +1,9 @@
 # render.yaml — Deploy frontend Owly English lên Render Static Site.
 # Lý do: Vercel free giới hạn 100 deployments/ngày (đã chạm trần 19/10/2026),
 # Render Static Site không giới hạn số deploy/ngày.
-# API /api/ask-owly VẪN chạy trên Vercel (https://tienganh-cung-dautay.vercel.app/api/*)
-# — frontend gọi qua VITE_OWLY_API_URL, CORS đã mở ở api/ask-owly.js.
+# API ask-owly CHẠY TRÊN CLOUDFLARE WORKER (worker/ask-owly-worker.js + wrangler.toml)
+# — không còn phụ thuộc Vercel. Frontend gọi qua VITE_OWLY_API_URL
+# (set trong Render dashboard → Environment).
 #
 # Cách dùng: push file này lên main → vào render.com → New → Static Site →
 # chọn repo hayhahen-ui/tienganh-cung-dautay → Render tự đọc cấu hình dưới.
@@ -15,8 +16,9 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
+      # Đổi thành URL worker sau khi deploy: https://owly-ask-api.<subdomain>.workers.dev
       - key: VITE_OWLY_API_URL
-        value: https://tienganh-cung-dautay.vercel.app
+        value: https://owly-ask-api.workers.dev
     routes:
       - type: rewrite
         source: /*
