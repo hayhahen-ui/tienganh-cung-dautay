@@ -12,7 +12,12 @@
  *   SUPABASE_SERVICE_ROLE_KEY, OWLY_SETUP_TOKEN.
  */
 import { createServer } from "node:http";
+import dns from "node:dns";
 import handler from "../api/admin-users.js";
+
+// Ưu tiên IPv4 khi phân giải DNS: Node fetch (undici) có thể kẹt ở IPv6 khi
+// gọi *.supabase.co trên một số hạ tầng → "TypeError: fetch failed".
+dns.setDefaultResultOrder("ipv4first");
 
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -56,6 +61,44 @@ const server = createServer(async (req, res) => {
   // Health check / ping giữ ấm: GET / → 200
   if (url.pathname === "/" || url.pathname === "/health") {
     return res.status(200).json({ ok: true, service: "owly-admin-api" });
+  }
+
+  // Chẩn đoán tạm (chỉ báo có/không env + 4 ký tự đầu + tầm với tới Supabase,
+  // KHÔNG lộ giá trị bí mật) — xóa sau khi sự cố xong.
+  if (url.pathname === "/diag") {
+    const out = { env: {}, checks: [] };
+    for (const name of [
+      "SUPABASE_URL",
+      "SUPABASE_ANON_KEY",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "OWLY_SETUP_TOKEN",
+    ]) {
+      const v = process.env[name];
+      out.env[name] = v
+        ? { present: true, len: v.length, prefix: v.slice(0, 4) }
+        : { present: false };
+    }
+    const base = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+    try {
+      out.urlHost = new URL(base).host;
+    } catch {
+      out.urlHost = "INVALID_URL";
+    }
+    for (const path of ["/rest/v1/", "/auth/v1/health"]) {
+      try {
+        const r = await fetch(base + path, {
+          headers: { apikey: process.env.SUPABASE_ANON_KEY || "" },
+        });
+        out.checks.push({ path, status: r.status });
+      } catch (e) {
+        out.checks.push({
+          path,
+          error: String(e?.message ?? e),
+          cause: String(e?.cause?.code || e?.cause?.message || ""),
+        });
+      }
+    }
+    return res.status(200).json(out);
   }
 
   if (url.pathname !== "/api/admin-users") {
