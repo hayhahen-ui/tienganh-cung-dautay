@@ -213,3 +213,16 @@ Environment → rebuild. Vercel giữ nguyên trong repo nhưng không còn dùn
 **Test:** Node — resolveConfig `lrsk_` → đúng base/model; gọi thật validate/chat với
 key giả → LarpRouter trả 401 (đúng endpoint + auth format). detectOwlyProvider đúng
 cả 7 loại key. TSC/lint/build pass.
+
+## J. Fix tiền tố key LarpRouter: lrsk- (gạch ngang), không phải lrsk_ (20/10/2026, commit `19e2dd9`)
+**Hiện tượng:** user dán key LarpRouter (`lrsk-72c0d40…` trong ảnh dashboard) nhưng UI
+nhận diện thành "Alibaba Qwen (DashScope)" → bấm Kiểm tra kết nối → 401
+"Incorrect API key" từ Alibaba.
+**Nguyên nhân:** code test tiền tố `lrsk_` (gạch dưới) trong khi key thật của
+LarpRouter dùng `lrsk-` (gạch ngang) → không khớp provider nào → rớt về catch-all
+dashscope ở cả frontend (detectOwlyProvider) lẫn proxy (resolveConfig).
+**Fix:** chấp nhận cả `lrsk-` và `lrsk_` ở `api/_owly-proxy.js` và
+`src/lib/rag/owlyProviders.ts`. Test lại bằng đúng định dạng key thật: detect
+đúng larprouter, validate gọi đúng LarpRouter. Vercel deploy xong, verify production.
+**Bài học:** khi test tiền tố key, dùng ĐÚNG định dạng trong ảnh/tài liệu của nhà
+cung cấp, đừng tự đoán gạch ngang/gạch dưới.
