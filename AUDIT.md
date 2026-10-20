@@ -396,3 +396,8 @@ retriever thật): "crosswalk nghĩa là gì" → chunk sách #1, "detergent là
 → #1, "hoa trạng nguyên tiếng Anh là gì" → #1, "poinsettia tiếng Việt là
 gì" → #4 (vẫn trong cửa sổ top-5 mà AskOwly dùng; các chunk FAQ chung
 chiếm hạng đầu vì khớp token "tiếng việt").
+
+**Bổ sung §R (chiều 20/10):** theo yêu cầu user, dữ liệu sách còn được đưa
+thẳng lên trang Giáo trình — component `OxfordBookSection`: duyệt 12 units /
+116 chủ đề (mỗi thẻ ghi số trang sách), bấm mở xem cặp Anh–Việt + nghe phát
+âm từng từ, ô tra cứu toàn từ điển không cần gõ dấu (trần 60 kết quả).

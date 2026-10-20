@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, ExternalLink } from "lucide-react";
 import { OxfordPictureSection } from "@/components/OxfordPictureSection";
+import { OxfordBookSection } from "@/components/OxfordBookSection";
 import {
   cambridgeDownloads,
   coursebooks,
@@ -210,6 +211,9 @@ function Curriculum() {
 
       {/* ── 8. Từ vựng tranh Oxford theo cấp độ ───────────────────────── */}
       <OxfordPictureSection />
+
+      {/* ── 9. Từ điển tranh Oxford bản gốc Anh–Việt (số hoá từ sách) ──── */}
+      <OxfordBookSection />
 
       <p className="mt-12 rounded-xl bg-success/15 p-4 text-sm font-semibold text-success">
         ✅ Cách dùng cùng app: bé học bài trong mục "Bài học" (mỗi bài đã ghi rõ bám giáo trình nào)
