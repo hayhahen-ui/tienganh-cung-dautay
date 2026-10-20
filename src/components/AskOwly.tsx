@@ -16,7 +16,12 @@ import {
   Settings,
 } from "lucide-react";
 import { retrieve } from "@/lib/rag/retriever";
-import { composeAnswer, type Answer } from "@/lib/rag/answerer";
+import {
+  composeAnswer,
+  detectTranslationQuery,
+  translatePhrase,
+  type Answer,
+} from "@/lib/rag/answerer";
 import { suggestedQuestions } from "@/lib/rag/knowledge";
 import { askLlm, isLlmOn } from "@/lib/rag/ask-server";
 import { speak } from "@/lib/speech";
@@ -138,11 +143,26 @@ export function AskOwly() {
             .slice(0, 3)
             .map((r) => r.chunk.text)
             .join("\n\n");
-          const llmResult = await askLlm({ data: { question: q, context } });
+          // Câu hỏi dịch Việt→Anh: ra lệnh AI ghép các từ đã dịch thành MỘT câu
+          // tiếng Anh hoàn chỉnh đúng ngữ pháp (trước đây AI lúc ghép lúc không,
+          // có lúc trả về trống → header "giải thích thêm" rỗng).
+          const trPhrase = detectTranslationQuery(q);
+          const trWords = trPhrase
+            ? translatePhrase(trPhrase).map((h) => h.entry.word.split("/")[0]!.trim())
+            : [];
+          const llmQuestion =
+            trWords.length >= 2
+              ? `${q}\n\n[Yêu cầu bắt buộc: đây là câu hỏi dịch Việt→Anh. Các từ đã dịch: ${trWords.join(", ")}. Hãy ghép chúng thành MỘT câu tiếng Anh hoàn chỉnh, đúng ngữ pháp (thêm mạo từ a/the, chia động từ, sắp xếp đúng thứ tự từ), cho bé đọc câu đó, rồi giải thích ngắn gọn bằng tiếng Việt.]`
+              : q;
+          let llmResult = await askLlm({ data: { question: llmQuestion, context } });
+          // AI trả về rỗng → thử lại 1 lần trước khi bỏ cuộc.
+          if (llmResult.mode === "llm" && !(llmResult.text || "").trim() && trWords.length >= 2) {
+            llmResult = await askLlm({ data: { question: llmQuestion, context } });
+          }
 
           if (llmResult.mode === "not-configured") {
             setLlmStatus("off");
-          } else if (llmResult.mode === "llm") {
+          } else if (llmResult.mode === "llm" && (llmResult.text || "").trim()) {
             setLlmStatus("on");
             isLlm = true;
             // If RAG found a confident answer, enhance it with LLM
@@ -159,6 +179,10 @@ export function AskOwly() {
               // Keep RAG sources if they exist, otherwise empty
               sources: localAnswer.sources,
             };
+          } else if (llmResult.mode === "llm") {
+            // AI trả về rỗng sau khi thử lại → giữ nguyên đáp án giáo trình,
+            // KHÔNG in header "giải thích thêm" trống.
+            setLlmError("AI chưa trả lời được câu này, bé xem phần giáo trình nhé.");
           } else {
             // Lỗi tạm thời (mạng, hết quota, key sai) → giữ nguyên trạng thái
             // badge, chỉ hiện lỗi; KHÔNG tắt AI hẳn vì key vẫn còn trên máy.

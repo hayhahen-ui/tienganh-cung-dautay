@@ -226,3 +226,29 @@ dashscope ở cả frontend (detectOwlyProvider) lẫn proxy (resolveConfig).
 đúng larprouter, validate gọi đúng LarpRouter. Vercel deploy xong, verify production.
 **Bài học:** khi test tiền tố key, dùng ĐÚNG định dạng trong ảnh/tài liệu của nhà
 cung cấp, đừng tự đoán gạch ngang/gạch dưới.
+
+## K. Dịch Việt→Anh: AI phải luôn ghép thành 1 câu hoàn chỉnh (20/10/2026)
+**Hiện tượng:** cùng câu hỏi dịch, câu trên AI ghép thành câu hoàn chỉnh
+("The butterfly is on the flower."), câu dưới mục "Cô Owly giải thích thêm" TRỐNG.
+Kèm 2 lỗi phụ: "anh" trong "tiếng anh" bị dịch thành brother; "anh trai" bị tách
+thành brother + son.
+**Nguyên nhân:**
+1. Model (DeepSeek qua LarpRouter) đôi lúc trả 200 nhưng nội dung rỗng; app in
+   header "giải thích thêm" vô điều kiện. Prompt gửi AI cũng không hề yêu cầu
+   ghép câu — câu trên ghép được là do model tự suy.
+2. `detectTranslationQuery` giữ "tiếng anh" trong cụm cần dịch ("học tiếng anh
+   rất vui") → từ "anh" khớp form "anh" (tách từ "anh/em trai") → brother.
+3. Entry brother chỉ có form "anh"/"em trai", không có "anh trai" → greedy khớp
+   "anh" trước, thừa "trai" → son. (Chú ý: dictionary() ưu tiên lesson entries —
+   phải sửa ở lessons/core.ts, sửa wordlist không ăn.)
+**Fix:**
+- `answerer.ts`: `stripLangMarker()` bỏ "tiếng anh"/"tieng anh" khỏi cụm dịch.
+- `dictionary.ts` + `lessons/core.ts`: vi brother → "anh trai, anh/em trai"
+  (forms gồm cả "anh trai" 2 từ → khớp trước).
+- `api/_owly-proxy.js`: SYSTEM_PROMPT thêm luật dịch → luôn ghép 1 câu hoàn chỉnh;
+  `callChat` gặp response rỗng tự thử model dự phòng.
+- `AskOwly.tsx`: câu hỏi dịch ≥2 từ → gửi kèm lệnh bắt buộc ghép câu + danh sách
+  từ đã dịch; AI trả rỗng → thử lại 1 lần; vẫn rỗng → giữ đáp án giáo trình,
+  KHÔNG in header trống.
+**Test:** esbuild chạy 3 câu thật — hits đúng hết (không còn brother lạc, "anh trai"
+là 1 hit); mock callChat: model chính rỗng → fallback trả câu đầy đủ. TSC/lint/build OK.

@@ -786,7 +786,7 @@ export const yleDictionary: DictWord[] = [
   },
   {
     en: "brother",
-    vi: "anh trai/em trai",
+    vi: "anh trai, anh/em trai",
     ipa: "/ˈbrʌðə/",
     emoji: "👦",
     theme: "Family & friends",

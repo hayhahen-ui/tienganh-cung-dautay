@@ -259,6 +259,20 @@ function viFormsDia(vi: string): string[] {
 }
 
 /**
+ * Bỏ cụm marker ngôn ngữ "tiếng anh"/"tieng anh" khỏi cụm cần dịch.
+ * Cụm cần dịch mặc định LÀ dịch sang tiếng Anh, nên "tiếng anh" bên trong
+ * (vd "học tiếng anh rất vui") chỉ là từ đệm — giữ lại khiến "anh" khớp nhầm
+ * thành "brother" (từ điển có form "anh" tách từ "anh/em trai"). (20/10/2026)
+ */
+function stripLangMarker(phrase: string): string {
+  const cleaned = phrase
+    .replace(/(^|\s)(tiếng anh|tieng anh)(?=\s|$)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned.length >= 2 ? cleaned : phrase;
+}
+
+/**
  * Nhận diện ý định dịch Việt→Anh; trả về cụm tiếng Việt cần dịch (GIỮ DẤU) hoặc null.
  * Giữ dấu để "đậu" không bị nhầm với "đầu".
  */
@@ -283,10 +297,10 @@ export function detectTranslationQuery(query: string): string | null {
       const pw = phraseStrip.split(" ").filter(Boolean);
       for (let s = 0; s + pw.length <= stripWords.length; s++) {
         if (pw.every((w, k) => stripWords[s + k] === w)) {
-          return diaWords.slice(s, s + pw.length).join(" ");
+          return stripLangMarker(diaWords.slice(s, s + pw.length).join(" "));
         }
       }
-      return phraseStrip;
+      return stripLangMarker(phraseStrip);
     }
   }
   return null;

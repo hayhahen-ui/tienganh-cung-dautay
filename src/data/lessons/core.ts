@@ -130,7 +130,7 @@ export const coreLessons: Lesson[] = [
       { word: "mother", ipa: "/ˈmʌðə/", vi: "mẹ", emoji: "👩" },
       { word: "father", ipa: "/ˈfɑːðə/", vi: "bố", emoji: "👨" },
       { word: "sister", ipa: "/ˈsɪstə/", vi: "chị/em gái", emoji: "👧" },
-      { word: "brother", ipa: "/ˈbrʌðə/", vi: "anh/em trai", emoji: "👦" },
+      { word: "brother", ipa: "/ˈbrʌðə/", vi: "anh trai, anh/em trai", emoji: "👦" },
       { word: "grandmother", ipa: "/ˈɡrænmʌðə/", vi: "bà", emoji: "👵" },
       { word: "grandfather", ipa: "/ˈɡrænfɑːðə/", vi: "ông", emoji: "👴" },
       { word: "baby", ipa: "/ˈbeɪbi/", vi: "em bé", emoji: "👶" },

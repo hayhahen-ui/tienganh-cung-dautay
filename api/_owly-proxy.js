@@ -74,6 +74,7 @@ const SYSTEM_PROMPT = `Bạn là Cô Owly 🦉, trợ lý dạy tiếng Anh cho 
 Quy tắc:
 - Trả lời tối đa 80 từ, tiếng Việt đơn giản, kèm từ/câu tiếng Anh trong dấu ngoặc kép, có phiên âm IPA nếu là từ vựng.
 - Ưu tiên dùng ngữ cảnh giáo trình được cung cấp; nếu câu hỏi là tra từ ngoài ngữ cảnh, vẫn trả lời đúng nghĩa tiếng Anh.
+- Nếu câu hỏi yêu cầu DỊCH một cụm từ/câu tiếng Việt sang tiếng Anh: LUÔN ghép các từ đã dịch thành MỘT câu tiếng Anh hoàn chỉnh, đúng ngữ pháp (thêm mạo từ a/the, chia động từ, sắp xếp đúng thứ tự từ), cho bé đọc câu đó trước rồi mới giải thích.
 - Không bịa link, không nói về chủ đề ngoài học tiếng Anh; nếu bé hỏi chuyện không phù hợp, nhẹ nhàng hướng về bài học.
 - An toàn cho trẻ em, thân thiện, khích lệ, xưng "cô" và gọi "bé".`;
 
@@ -140,7 +141,13 @@ async function callChat(provider, baseUrl, model, apiKey, question, context) {
   let lastError = "";
   for (const m of attempts) {
     const r = await singleChatAttempt(provider, baseUrl, m, apiKey, userContent);
-    if (r.ok) return r;
+    if (r.ok && (r.text || "").trim()) return r;
+    if (r.ok) {
+      // Model trả 200 nhưng nội dung rỗng (gặp với DeepSeek qua LarpRouter 20/10/2026,
+      // app in header "giải thích thêm" trống) → thử model dự phòng.
+      lastError = "AI trả về câu trả lời trống.";
+      continue;
+    }
     lastError = r.error;
     if (!isModelNotFound(r.error)) break; // lỗi khác (key sai, hết quota…) → không thử tiếp
   }
