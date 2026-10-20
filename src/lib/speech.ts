@@ -211,7 +211,14 @@ function ensureVoicesLoaded() {
  */
 export function speak(
   text: string,
-  opts: { slow?: boolean | undefined; rate?: number | undefined } = {},
+  opts: {
+    slow?: boolean | undefined;
+    rate?: number | undefined;
+    /** Gọi khi bắt đầu đọc 1 từ (charIndex trong text) — dùng highlight karaoke. */
+    onBoundary?: ((charIndex: number) => void) | undefined;
+    /** Gọi khi đọc xong hoặc bị lỗi/hủy — dùng reset UI. */
+    onEnd?: (() => void) | undefined;
+  } = {},
 ) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return false;
   ensureVoicesLoaded();
@@ -234,8 +241,21 @@ export function speak(
   } else {
     u.lang = "en-GB";
   }
+  if (opts.onBoundary) {
+    u.onboundary = (e: SpeechSynthesisEvent) => opts.onBoundary!(e.charIndex);
+  }
+  if (opts.onEnd) {
+    u.onend = () => opts.onEnd!();
+    u.onerror = () => opts.onEnd!();
+  }
   window.speechSynthesis.speak(u);
   return true;
+}
+
+/** Dừng mọi phát âm đang chạy (nút Dừng). */
+export function stopSpeaking() {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
 }
 
 /** Nghe thử câu mẫu với cài đặt hiện tại (dùng trong bảng chọn giọng). */

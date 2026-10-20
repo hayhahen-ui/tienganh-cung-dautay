@@ -252,3 +252,18 @@ thành brother + son.
   KHÔNG in header trống.
 **Test:** esbuild chạy 3 câu thật — hits đúng hết (không còn brother lạc, "anh trai"
 là 1 hit); mock callChat: model chính rỗng → fallback trả câu đầy đủ. TSC/lint/build OK.
+
+## L. Đọc cả câu phải liền mạch (20/10/2026)
+**Hiện tượng:** nút "Đọc hết" trong SpeakWords đọc từng từ riêng lẻ (mỗi từ 1
+utterance + setTimeout) → nghe rời rạc, ngắt nghỉ giữa từng từ, không giống
+người bản địa.
+**Fix:**
+- `AskOwly.tsx` `SpeakWords.speakAll()`: dựng lại câu tự nhiên (gắn dấu câu
+  sát từ) và đọc TRỌN CÂU bằng 1 utterance duy nhất qua `speak()` → ngữ điệu
+  liền mạch. Highlight từng từ chuyển sang `boundary` event (progressive
+  enhancement — voice không hỗ trợ thì vẫn đọc liền, chỉ không highlight).
+  Nút đổi nhãn "Đọc cả câu"; playId chống callback của lượt đọc cũ ghi đè UI.
+- `speech.ts`: `speak()` thêm opts `onBoundary`/`onEnd` (onerror cũng map về
+  onEnd để reset UI) + export `stopSpeaking()`.
+- Bấm từng từ riêng lẻ giữ nguyên (đó là tính năng học phát âm 1 từ).
+**Test:** TSC/lint/build OK. (Audio cần test tai nghe trên production.)

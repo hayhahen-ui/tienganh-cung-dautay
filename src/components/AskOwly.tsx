@@ -24,7 +24,7 @@ import {
 } from "@/lib/rag/answerer";
 import { suggestedQuestions } from "@/lib/rag/knowledge";
 import { askLlm, isLlmOn } from "@/lib/rag/ask-server";
-import { speak } from "@/lib/speech";
+import { speak, stopSpeaking } from "@/lib/speech";
 import { AiKeySettings } from "@/components/AiKeySettings";
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -579,34 +579,71 @@ function SpeakWords({ text }: { text: string }) {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [playingAll, setPlayingAll] = useState(false);
   const words = splitWords(text);
-  const cancelRef = useRef(false);
+  // Dựng lại câu tự nhiên để ĐỌC LIỀN MẠCH 1 utterance (không khoảng trắng thừa trước dấu câu).
+  const sentence = words.join(" ").replace(/\s+([.,!?;:'")\]])/g, "$1");
+  // Offset ký tự của từng từ trong câu → map boundary event thành highlight.
+  const offsets: number[] = [];
+  {
+    let pos = 0;
+    for (const w of words) {
+      pos = sentence.indexOf(w, pos);
+      offsets.push(pos);
+      pos += w.length;
+    }
+  }
+  const playIdRef = useRef(0);
+
+  const stopAll = () => {
+    playIdRef.current++;
+    stopSpeaking();
+    setPlayingAll(false);
+    setActiveIdx(null);
+  };
 
   const speakWord = (word: string, idx: number) => {
-    cancelRef.current = true;
+    playIdRef.current++;
+    setPlayingAll(false);
     setActiveIdx(idx);
     speak(word, { rate: 0.7 });
     // Reset highlight after a short delay (approximate word duration)
-    setTimeout(() => setActiveIdx(null), Math.max(600, word.length * 120));
+    setTimeout(
+      () => setActiveIdx((cur) => (cur === idx ? null : cur)),
+      Math.max(600, word.length * 120),
+    );
   };
 
-  const speakAll = async () => {
+  const speakAll = () => {
     if (playingAll) {
-      cancelRef.current = true;
-      setPlayingAll(false);
-      setActiveIdx(null);
+      stopAll();
       return;
     }
-    cancelRef.current = false;
+    const id = ++playIdRef.current;
     setPlayingAll(true);
-    for (let i = 0; i < words.length; i++) {
-      if (cancelRef.current) break;
-      setActiveIdx(i);
-      speak(words[i]!, { rate: 0.7 });
-      // Wait roughly proportional to word length
-      await new Promise((r) => setTimeout(r, Math.max(500, words[i]!.length * 100)));
+    setActiveIdx(0);
+    // ĐỌC CẢ CÂU TRONG 1 UTTERANCE — ngữ điệu liền mạch như người bản địa
+    // (trước đây đọc từng từ riêng lẻ nên nghe rời rạc). Highlight từng từ
+    // qua boundary event (trình duyệt/voice nào không hỗ trợ thì chỉ không
+    // highlight, tiếng vẫn liền mạch).
+    const ok = speak(sentence, {
+      onBoundary: (charIndex) => {
+        if (playIdRef.current !== id) return;
+        let idx = 0;
+        for (let i = 0; i < offsets.length; i++) {
+          if (offsets[i]! <= charIndex) idx = i;
+          else break;
+        }
+        setActiveIdx(idx);
+      },
+      onEnd: () => {
+        if (playIdRef.current !== id) return;
+        setPlayingAll(false);
+        setActiveIdx(null);
+      },
+    });
+    if (!ok) {
+      setPlayingAll(false);
+      setActiveIdx(null);
     }
-    setPlayingAll(false);
-    setActiveIdx(null);
   };
 
   return (
@@ -615,11 +652,11 @@ function SpeakWords({ text }: { text: string }) {
         <p className="text-xs font-bold text-sky">🔊 Bấm vào từng từ để nghe phát âm riêng:</p>
         <button
           type="button"
-          onClick={() => void speakAll()}
+          onClick={() => speakAll()}
           className="inline-flex items-center gap-1 rounded-full border-2 border-sky bg-sky/20 px-2.5 py-0.5 text-xs font-bold text-sky transition-colors hover:bg-sky/30"
         >
           {playingAll ? <Square className="size-3" /> : <Play className="size-3" />}
-          {playingAll ? "Dừng" : "Đọc hết"}
+          {playingAll ? "Dừng" : "Đọc cả câu"}
         </button>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
