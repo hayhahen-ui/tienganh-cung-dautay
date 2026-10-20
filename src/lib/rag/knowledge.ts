@@ -297,9 +297,10 @@ function metaChunks(): Chunk[] {
     const allWords = t.entries.map((e) => `${e.en} ${e.vi}`).join(" ");
     chunks.push({
       id: `oxford-book-${t.slug}`,
-      text: `Từ điển tranh Oxford (sách The Oxford Picture Dictionary, Anh–Việt), Unit ${t.unit} "${t.unitEn}" (${t.unitVi}), chủ đề "${t.topicEn}" (${t.topicVi}), trang ${pages}: ${pairs}.`,
-      keywords: `${t.topicEn} ${t.topicVi} ${allWords} oxford picture dictionary sách oxford từ điển tranh trang ${pages}`,
+      text: `Từ điển tranh Oxford (sách The Oxford Picture Dictionary, Anh–Việt), Unit ${t.unit} "${t.unitEn}" (${t.unitVi}), chủ đề "${t.topicEn}" (${t.topicVi}), trang ${pages}, phân cấp Cambridge YLE: ${t.level}: ${pairs}.`,
+      keywords: `${t.topicEn} ${t.topicVi} ${allWords} oxford picture dictionary sách oxford từ điển tranh trang ${pages} ${t.level}`,
       source: { type: "vocab" as const, label: `📖 ${t.topicEn} (Oxford tr.${pages})` },
+      level: t.level,
     });
   });
 

@@ -401,3 +401,33 @@ chiếm hạng đầu vì khớp token "tiếng việt").
 thẳng lên trang Giáo trình — component `OxfordBookSection`: duyệt 12 units /
 116 chủ đề (mỗi thẻ ghi số trang sách), bấm mở xem cặp Anh–Việt + nghe phát
 âm từng từ, ô tra cứu toàn từ điển không cần gõ dấu (trần 60 kết quả).
+
+## §S — Phân cấp YLE + ảnh thật cho từ điển Oxford (20/10/2026)
+
+**Phân cấp 116 chủ đề → Starters 36 · Movers 44 · Flyers 36** (`levels.json`,
+sinh lại `oxfordBook.ts` bằng `gen_ts.py`; chunk RAG kèm trường `level`):
+1. *Neo*: trùng chủ đề với 36 chủ đề Oxford thiếu nhi đã phân cấp
+   (`oxfordPicture.ts`) → thừa hưởng (Jobs=Movers, Technology=Flyers...).
+2. *Phiếu từ vựng*: mỗi mục từ đối chiếu `yleDictionary` 883 từ Cambridge có
+   gắn cấp (khử số nhiều khi khớp) → cấp đa số, yêu cầu độ phủ ≥22%.
+3. *Hiệu chỉnh tay* 56 ca (thematic-manual + override-anchor) cho chủ đề ít
+   từ YLE hoặc phiếu bị nhiễu bởi từ đơn giản — vd Jobs→Movers,
+   Job Search/Government→Flyers, Calendar→Starters, Hospital/Clinics→Movers
+   (neo At the Doctor). Mọi ca đều truy vết được cơ sở trong `levels.json`.
+
+**Ảnh minh hoạ — ẢNH CHỤP THẬT 116/116 chủ đề** từ Wikimedia Commons
+(Openverse API bị Cloudflare chặn bot nên dùng Commons): tiêu chí chọn =
+JPEG ≥1024px, ưu tiên có **EXIF máy ảnh** (104/116 có EXIF; còn lại là ảnh
+tư liệu Commons chọn tay theo tiêu đề), loại tranh vẽ/poster/logo bằng bộ
+lọc tiêu đề. Toàn bộ 116 ảnh đã được người soát (qua bảng ảnh tổng) rà bằng
+mắt 2 vòng: thay ~45 ảnh sai nội dung/không phù hợp trẻ em (vd Family từng
+trúng ảnh biểu tình, Studying từng trúng ảnh bảo tàng chiến tranh — đã thay
+bằng ảnh gia đình 1972 và bé đọc sách). Mỗi ảnh hiển thị kèm tác giả +
+giấy phép (CC/PD) + link trang Commons. Script: `fetch_images.py`
+(`research/oxford-source/`, không lên Git cùng PDF/OCR).
+
+**UI**: `OxfordBookSection` thêm bộ lọc Cấp độ (kết hợp bộ lọc Unit), thẻ
+chủ đề có ảnh bìa + huy hiệu cấp + ghi nguồn ảnh; kết quả tra cứu cũng hiện
+huy hiệu cấp. Kiểm chứng: tsc sạch, build OK, retriever test — "crosswalk"
+→ chunk sách #1 (level movers), "từ vựng starters về gia đình" → chunk
+Family #2 (level starters).

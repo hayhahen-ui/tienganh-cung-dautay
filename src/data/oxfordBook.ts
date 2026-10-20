@@ -3,14 +3,23 @@
  * (Shapiro & Adelson-Goldstein, Oxford University Press), file PICTURE_OXFORD.pdf
  * do người dùng cung cấp. Trích xuất bằng OCR (Tesseract eng+vie) + tách theo tọa độ,
  * chỉ gồm cặp từ Anh–Việt theo chủ đề (không gồm hình minh hoạ/văn bản dài của sách).
- * Tổng: 2245 mục từ, 116 chủ đề có dữ liệu / 128 chủ đề (các chủ đề còn lại
- * là trang bản đồ/tranh toàn cảnh — OCR không tách cặp tin cậy được, xem AUDIT.md §R).
+ * Phân cấp Starters/Movers/Flyers: đối chiếu wordlist Cambridge YLE 2025 (từ điển
+ * 878 từ của dự án) + thừa hưởng cấp từ 36 chủ đề Oxford thiếu nhi + hiệu chỉnh chuyên đề
+ * (xem AUDIT.md §S). Ảnh minh hoạ: ảnh chụp thật từ Wikimedia Commons (ghi nguồn ở từng ảnh).
+ * Tổng: 2245 mục từ, 116 chủ đề có dữ liệu / 128 chủ đề.
  */
 
+export type OxfordBookLevel = "starters" | "movers" | "flyers";
+
 export interface OxfordBookEntry { en: string; vi: string }
+export interface OxfordBookImage {
+  src: string; page: string; credit: string; license: string;
+}
 export interface OxfordBookTopic {
   slug: string; unit: number; unitEn: string; unitVi: string;
   topicEn: string; topicVi: string; bookPages: [number, number];
+  level: OxfordBookLevel;
+  image?: OxfordBookImage;
   entries: OxfordBookEntry[];
 }
 
@@ -22,7 +31,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "personal-information", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Personal Information", topicVi: "Lý Lịch",
-    bookPages: [4, 4],
+    bookPages: [4, 4], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Legal_Contract_%26_Signature_-_Warm_Tones.jpg/960px-Legal_Contract_%26_Signature_-_Warm_Tones.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Legal_Contract_%26_Signature_-_Warm_Tones.jpg",
+      credit: "Blogtrepreneur", license: "CC BY 2.0",
+    },
     entries: [
       { en: "apt", vi: "căn nhà số" },
       { en: "city", vi: "thành phổ" },
@@ -47,7 +61,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "school", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "School", topicVi: "Trường Học",
-    bookPages: [5, 5],
+    bookPages: [5, 5], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/An_Education_Volunteer_with_his_high_school_students_in_the_Philippines.jpg/960px-An_Education_Volunteer_with_his_high_school_students_in_the_Philippines.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:An_Education_Volunteer_with_his_high_school_students_in_the_Philippines.jpg",
+      credit: "Peace Corps", license: "Public domain",
+    },
     entries: [
       { en: "auditorium", vi: "thính đường/ giảng đường" },
       { en: "bleachers", vi: "khán đài" },
@@ -71,7 +90,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "studying", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Studying", topicVi: "Học",
-    bookPages: [6, 7],
+    bookPages: [6, 7], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/Child_reading_a_book_while_sitting_on_a_soft_surface.jpg/960px-Child_reading_a_book_while_sitting_on_a_soft_surface.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Child_reading_a_book_while_sitting_on_a_soft_surface.jpg",
+      credit: "Shixart1985", license: "CC BY 2.0",
+    },
     entries: [
       { en: "a sentence", vi: "Đọc lên một câu" },
       { en: "Answer a question", vi: "Trả lời câu hỏi việc trong nhóm" },
@@ -105,7 +129,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "everyday-conversation", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Everyday Conversation", topicVi: "Đàm Thoại Hàng Ngày",
-    bookPages: [8, 8],
+    bookPages: [8, 8], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/Bizzard_Staff_Talking_with_Visitors_in_Plaza_20170211c.jpg/960px-Bizzard_Staff_Talking_with_Visitors_in_Plaza_20170211c.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Bizzard_Staff_Talking_with_Visitors_in_Plaza_20170211c.jpg",
+      credit: "玄史生", license: "CC0",
+    },
     entries: [
       { en: "begin a conversation", vi: "bắt đầu cuộc dam thoại" },
       { en: "compliment your thank your friend", vi: "ng bạn cám ơn bạn" },
@@ -116,7 +145,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "the-telephone", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "The Telephone", topicVi: "Điện Thoại",
-    bookPages: [9, 9],
+    bookPages: [9, 9], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/Barack_Obama_on_the_phone_in_Dublin.jpg/960px-Barack_Obama_on_the_phone_in_Dublin.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Barack_Obama_on_the_phone_in_Dublin.jpg",
+      credit: "Pete Souza (Executive Office of the President of the United States)", license: "Public domain",
+    },
     entries: [
       { en: "answering machine", vi: "máy trả lời điện thoại" },
       { en: "cellular phone", vi: "điện thoại cầm tay" },
@@ -144,7 +178,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "weather", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Weather", topicVi: "Thời Tiết",
-    bookPages: [10, 10],
+    bookPages: [10, 10], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Cloudy_blue_sky_without_sun.jpg/960px-Cloudy_blue_sky_without_sun.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Cloudy_blue_sky_without_sun.jpg",
+      credit: "Borhan", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "cloudy", vi: "mây mù" },
       { en: "dust storm", vi: "bão cát" },
@@ -169,7 +208,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "describing-things", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Describing Things", topicVi: "Mô Tả Đồ Vật",
-    bookPages: [11, 11],
+    bookPages: [11, 11], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Big_soap_bubble_of_irregular_shape_in_Paris.jpg/960px-Big_soap_bubble_of_irregular_shape_in_Paris.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Big_soap_bubble_of_irregular_shape_in_Paris.jpg",
+      credit: "Basile Morin", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "big hand", vi: "tay lớn" },
       { en: "children/ easy problem", vi: "loud children dễ bai toán" },
@@ -188,7 +232,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "colors", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Colors", topicVi: "Màu Sắc",
-    bookPages: [12, 12],
+    bookPages: [12, 12], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Colors_2.jpg/960px-Colors_2.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Colors_2.jpg",
+      credit: "Sukhjiwan Singh", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "beige", vi: "nâu vàng lạt" },
       { en: "black", vi: "đen" },
@@ -205,7 +254,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "prepositions", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Prepositions", topicVi: "Giới Từ",
-    bookPages: [13, 13],
+    bookPages: [13, 13], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Cat_at_reserved_table.jpg/960px-Cat_at_reserved_table.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Cat_at_reserved_table.jpg",
+      credit: "David Baron", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "The black box is under the white box", vi: "đen lộp r màu ở dưới hộp m màu trắng" },
       { en: "the brown box", vi: "a hộp màu tím và hộp màu nâu" },
@@ -223,7 +277,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "numbers-and-measurements", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Numbers and Measurements", topicVi: "Con Số Và Đo Lường",
-    bookPages: [14, 15],
+    bookPages: [14, 15], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Blue_tape_measure.jpg/960px-Blue_tape_measure.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Blue_tape_measure.jpg",
+      credit: "Clément Bucco-Lechat", license: "CC BY-SA 3.0",
+    },
     entries: [
       { en: "1/3 one-third 1/2", vi: "một phần ba" },
       { en: "1/4 one-fourth", vi: "một phần tư" },
@@ -261,7 +320,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "time", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Time", topicVi: "Thì Giờ",
-    bookPages: [16, 17],
+    bookPages: [16, 17], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Echo_Wall_Clock_%2849383378912%29.jpg/960px-Echo_Wall_Clock_%2849383378912%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Echo_Wall_Clock_(49383378912).jpg",
+      credit: "bfishadow from Beijing, China", license: "CC BY 2.0",
+    },
     entries: [
       { en: "1:00 one o'clock", vi: "một giờ" },
       { en: "1:05 one-oh-five", vi: "một giờ năm" },
@@ -296,7 +360,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "the-calendar", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "The Calendar", topicVi: "Lịch",
-    bookPages: [18, 19],
+    bookPages: [18, 19], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Mo_2007_pocket_daily_planner_-_Flickr_-_lexly87_aka_Duc_N._Ly.jpg/960px-Mo_2007_pocket_daily_planner_-_Flickr_-_lexly87_aka_Duc_N._Ly.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Mo_2007_pocket_daily_planner_-_Flickr_-_lexly87_aka_Duc_N._Ly.jpg",
+      credit: "Duc Ly from Portland, Oregon, usa", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "anniversary", vi: "ngày kỷ niệm" },
       { en: "appointment", vi: "hẹn" },
@@ -320,7 +389,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "money", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Money", topicVi: "Tiền",
-    bookPages: [20, 20],
+    bookPages: [20, 20], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/Wallet_and_money_20170827.jpg/960px-Wallet_and_money_20170827.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Wallet_and_money_20170827.jpg",
+      credit: "Santeri Viinamäki", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "$.01=1¢ a penny/1 cent", vi: "một xu" },
       { en: "$.05 5¢ a nickel/5 cents", vi: "năm xu Bills Tiền Giấy" },
@@ -340,7 +414,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "shopping", unit: 1,
     unitEn: "Everyday Language", unitVi: "Ngôn Ngữ Hàng Ngày",
     topicEn: "Shopping", topicVi: "Mua Sắm",
-    bookPages: [21, 21],
+    bookPages: [21, 21], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/DFC_1570%2C_a_woman_shopping_for_clothes_at_an_outdoor_market_-_Flickr_-_PattayaPatrol.jpg/960px-DFC_1570%2C_a_woman_shopping_for_clothes_at_an_outdoor_market_-_Flickr_-_PattayaPatrol.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:DFC_1570,_a_woman_shopping_for_clothes_at_an_outdoor_market_-_Flickr_-_PattayaPatrol.jpg",
+      credit: "Pattaya Patrol from Pattaya", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "bar code", vi: "ký hiệu ghi giá" },
       { en: "exchange", vi: "đổi lại" },
@@ -360,7 +439,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "age-and-physical-description", unit: 2,
     unitEn: "People", unitVi: "Người",
     topicEn: "Age and Physical Description", topicVi: "Tuổi Tác Và Thể Chất",
-    bookPages: [22, 22],
+    bookPages: [22, 22], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/db/Grandmother_and_granddaughter.jpg/960px-Grandmother_and_granddaughter.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Grandmother_and_granddaughter.jpg",
+      credit: "Linda Bartlett (Photographer)", license: "Public domain",
+    },
     entries: [
       { en: "10-year-old girl", vi: "bé gái 10 tuổi" },
       { en: "13-year-old boy", vi: "thiếu-niên 13 tuổi" },
@@ -391,7 +475,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "describing-hair", unit: 2,
     unitEn: "People", unitVi: "Người",
     topicEn: "Describing Hair", topicVi: "Mô Tả Tóc",
-    bookPages: [23, 23],
+    bookPages: [23, 23], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/DZ6_0589_A_barber_carefully_trims_a_customers_hair_inside_a_cozy_cluttered_shop_adorned_with_an_American_flag_and_various_tools.jpg/960px-DZ6_0589_A_barber_carefully_trims_a_customers_hair_inside_a_cozy_cluttered_shop_adorned_with_an_American_flag_and_various_tools.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:DZ6_0589_A_barber_carefully_trims_a_customers_hair_inside_a_cozy_cluttered_shop_adorned_with_an_American_flag_and_various_tools.jpg",
+      credit: "PattayaPatrol", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "bangs", vi: "tóc che trán" },
       { en: "beard", vi: "râu quai nón" },
@@ -424,7 +513,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "family", unit: 2,
     unitEn: "People", unitVi: "Người",
     topicEn: "Family", topicVi: "Gia Đình",
-    bookPages: [24, 25],
+    bookPages: [24, 25], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Early_1970s_family_photos_-_Broward_County_late_1972.jpg/960px-Early_1970s_family_photos_-_Broward_County_late_1972.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Early_1970s_family_photos_-_Broward_County_late_1972.jpg",
+      credit: "Father of Infrogmation of New Orleans", license: "CC BY 2.0",
+    },
     entries: [
       { en: "aunt", vi: "cô" },
       { en: "Ben in-law", vi: "bố vợ" },
@@ -451,7 +545,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "daily-routines", unit: 2,
     unitEn: "People", unitVi: "Người",
     topicEn: "Daily Routines", topicVi: "Công Việc Hàng Ngày",
-    bookPages: [26, 27],
+    bookPages: [26, 27], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Daily_routine_in_the_morning.jpg/960px-Daily_routine_in_the_morning.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Daily_routine_in_the_morning.jpg",
+      credit: "Ozims Divine", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "be in school", vi: "học/ở trường" },
       { en: "clean the house", vi: "quét don nha" },
@@ -478,7 +577,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "life-events", unit: 2,
     unitEn: "People", unitVi: "Người",
     topicEn: "Life Events", topicVi: "Diễn Biến Trong Cuộc Sống",
-    bookPages: [28, 29],
+    bookPages: [28, 29], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/A_couple_on_their_wedding_day_celebration.jpg/960px-A_couple_on_their_wedding_day_celebration.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:A_couple_on_their_wedding_day_celebration.jpg",
+      credit: "YElaw", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "birth certificate", vi: "giấy" },
       { en: "Certificate of Naturalization", vi: "giấy chứng nhận nhập tịch" },
@@ -498,7 +602,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "feelings", unit: 2,
     unitEn: "People", unitVi: "Người",
     topicEn: "Feelings", topicVi: "Cảm Giác",
-    bookPages: [30, 31],
+    bookPages: [30, 31], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/34/Jackie_LeMay%2C_May_28%2C_1932_-_DPLA_-_3e06240b08de01e83efc68b2cb7a6824.jpg/960px-Jackie_LeMay%2C_May_28%2C_1932_-_DPLA_-_3e06240b08de01e83efc68b2cb7a6824.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Jackie_LeMay,_May_28,_1932_-_DPLA_-_3e06240b08de01e83efc68b2cb7a6824.jpg",
+      credit: "Clay, Claude A., 1883-1944, Seattle Times", license: "No restrictions",
+    },
     entries: [
       { en: "calm", vi: "bình tĩnh" },
       { en: "cold", vi: "lạnh" },
@@ -521,7 +630,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-graduation", unit: 2,
     unitEn: "People", unitVi: "Người",
     topicEn: "A Graduation", topicVi: "Tốt Nghiệp",
-    bookPages: [32, 33],
+    bookPages: [32, 33], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Student_Graduation_at_Powidz_%289617252%29.jpg/960px-Student_Graduation_at_Powidz_%289617252%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Student_Graduation_at_Powidz_(9617252).jpg",
+      credit: "U.S. Army USARASGP by Staff Sgt. Stanford Toran", license: "Public domain",
+    },
     entries: [
       { en: "applaud /clap", vi: "võ tay" },
       { en: "audience", vi: "khán thính giả" },
@@ -549,7 +663,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "places-to-live", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "Places to Live", topicVi: "Chỗ Ở",
-    bookPages: [34, 34],
+    bookPages: [34, 34], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/DSC_8333_Quiet_residential_street_at_night_lined_with_modest_houses_and_lit_by_a_lone_row_of_streetlights.jpg/960px-DSC_8333_Quiet_residential_street_at_night_lined_with_modest_houses_and_lit_by_a_lone_row_of_streetlights.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:DSC_8333_Quiet_residential_street_at_night_lined_with_modest_houses_and_lit_by_a_lone_row_of_streetlights.jpg",
+      credit: "PattayaPatrol", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "a small town", vi: "thành phố nhỏ /thị trấn" },
       { en: "apartment building", vi: "nhà tầng /cao ốc /tòa 5 ha cao nhà" },
@@ -568,7 +687,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "finding-a-home", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "Finding a Home", topicVi: "Tìm Nhà",
-    bookPages: [35, 35],
+    bookPages: [35, 35], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/2022-05-23_14_14_30_A_house_with_a_%27Sold%27_sign_in_front_along_Aquetong_Lane_in_the_Mountainview_section_of_Ewing_Township%2C_Mercer_County%2C_New_Jersey.jpg/960px-2022-05-23_14_14_30_A_house_with_a_%27Sold%27_sign_in_front_along_Aquetong_Lane_in_the_Mountainview_section_of_Ewing_Township%2C_Mercer_County%2C_New_Jersey.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:2022-05-23_14_14_30_A_house_with_a_%27Sold%27_sign_in_front_along_Aquetong_Lane_in_the_Mountainview_section_of_Ewing_Township,_Mercer_County,_New_Jersey.jpg",
+      credit: "Famartin", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "get a loan", vi: "vay tiền" },
       { en: "look for apartment a new", vi: "tim apartment mới" },
@@ -589,7 +713,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "apartments", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "Apartments", topicVi: "Căn Hộ",
-    bookPages: [36, 37],
+    bookPages: [36, 37], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/AIMCO_apartment_exterior_2.jpg/960px-AIMCO_apartment_exterior_2.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:AIMCO_apartment_exterior_2.jpg",
+      credit: "Architecturist", license: "CC BY-SA 3.0",
+    },
     entries: [
       { en: "air conditioner", vi: "máy điều hoà không khí" },
       { en: "alley", vi: "đường hẻm" },
@@ -630,7 +759,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-house", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "A House", topicVi: "Nhà",
-    bookPages: [38, 38],
+    bookPages: [38, 38], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Henry_G._Haussauer_House%2C_Amherst%2C_New_York_-_20200703.jpg/960px-Henry_G._Haussauer_House%2C_Amherst%2C_New_York_-_20200703.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Henry_G._Haussauer_House,_Amherst,_New_York_-_20200703.jpg",
+      credit: "Andre Carrotflower", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "backyard", vi: "sân sau" },
       { en: "chimney", vi: "ống k" },
@@ -661,7 +795,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-yard", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "A Yard", topicVi: "Sân",
-    bookPages: [39, 39],
+    bookPages: [39, 39], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Integral_Urban_House_Backyard.jpg/960px-Integral_Urban_House_Backyard.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Integral_Urban_House_Backyard.jpg",
+      credit: "U.S. Department of Energy", license: "Public domain",
+    },
     entries: [
       { en: "barbecue grill", vi: "lò nướng barbecue" },
       { en: "bush", vi: "lùm cây" },
@@ -692,7 +831,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-kitchen", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "A Kitchen", topicVi: "Nhà Bếp",
-    bookPages: [40, 40],
+    bookPages: [40, 40], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Blue_white_kitchen_interior_%28Unsplash%29.jpg/960px-Blue_white_kitchen_interior_%28Unsplash%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Blue_white_kitchen_interior_(Unsplash).jpg",
+      credit: "NeONBRAND neonbrand", license: "CC0",
+    },
     entries: [
       { en: "blender", vi: "máy xay" },
       { en: "broiler", vi: "lò nướng" },
@@ -723,7 +867,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-dining-area", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "A Dining Area", topicVi: "Phòng Ăn",
-    bookPages: [41, 41],
+    bookPages: [41, 41], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Dining_table_in_Standen_House_2024-10-08.jpg/960px-Dining_table_in_Standen_House_2024-10-08.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Dining_table_in_Standen_House_2024-10-08.jpg",
+      credit: "Andy Li", license: "CC0",
+    },
     entries: [
       { en: "bowl", vi: "tô/bát" },
       { en: "candle", vi: "nến" },
@@ -748,7 +897,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-living-room", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "A Living Room", topicVi: "Phòng Khách",
-    bookPages: [42, 42],
+    bookPages: [42, 42], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/62/Living_Room_Palmer_Avenue_New_Orleans.jpg/960px-Living_Room_Palmer_Avenue_New_Orleans.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Living_Room_Palmer_Avenue_New_Orleans.jpg",
+      credit: "Bart Everson", license: "CC BY 2.0",
+    },
     entries: [
       { en: "armchair/easy chair", vi: "ghế dựa ghế bành" },
       { en: "basket", vi: "rổ" },
@@ -779,7 +933,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-bathroom", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "A Bathroom", topicVi: "Phòng Tắm",
-    bookPages: [43, 43],
+    bookPages: [43, 43], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Bathroom_2_-_Olivier_House%2C_New_Orleans.jpg/960px-Bathroom_2_-_Olivier_House%2C_New_Orleans.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Bathroom_2_-_Olivier_House,_New_Orleans.jpg",
+      credit: "Paul Schultz", license: "CC BY 2.0",
+    },
     entries: [
       { en: "bath mat", vi: "thấm lớt phòng tâm" },
       { en: "bath towel", vi: "khăn tắm" },
@@ -807,7 +966,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-bedroom", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "A Bedroom", topicVi: "Phòng Ngủ",
-    bookPages: [44, 44],
+    bookPages: [44, 44], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/Cozy_wooden_bedroom_with_floral_bedding.jpg/960px-Cozy_wooden_bedroom_with_floral_bedding.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Cozy_wooden_bedroom_with_floral_bedding.jpg",
+      credit: "Shixart1985", license: "CC BY 2.0",
+    },
     entries: [
       { en: "bed", vi: "giường" },
       { en: "bed frame", vi: "khung giường" },
@@ -842,7 +1006,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-children-s-bedroom", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "A Children's Bedroom", topicVi: "Phòng Ngủ Trẻ Con",
-    bookPages: [45, 45],
+    bookPages: [45, 45], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/Childrens_room_Br%C3%B8nn%C3%B8ysund_lighthouse.JPG/960px-Childrens_room_Br%C3%B8nn%C3%B8ysund_lighthouse.JPG",
+      page: "https://commons.wikimedia.org/wiki/File:Childrens_room_Br%C3%B8nn%C3%B8ysund_lighthouse.JPG",
+      credit: "Thomas Bjørkan", license: "CC BY-SA 3.0",
+    },
     entries: [
       { en: "baby monitor", vi: "theo dõi tré nit máy" },
       { en: "blocks", vi: "đồ chơi hình khối" },
@@ -872,7 +1041,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "housework", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "Housework", topicVi: "Việc Nhà",
-    bookPages: [46, 46],
+    bookPages: [46, 46], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b2/Helpen_bij_de_afwas_-_Helping_to_do_the_dishes_%284416872032%29.jpg/960px-Helpen_bij_de_afwas_-_Helping_to_do_the_dishes_%284416872032%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Helpen_bij_de_afwas_-_Helping_to_do_the_dishes_(4416872032).jpg",
+      credit: "Nationaal Archief", license: "No restrictions",
+    },
     entries: [
       { en: "dust the furniture", vi: "‘chili bụi bàn ghế" },
       { en: "empty the wastebasket", vi: "đổ rác" },
@@ -890,7 +1064,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "cleaning-supplies", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "Cleaning Supplies", topicVi: "Vật Dụng Lau Chùi",
-    bookPages: [47, 47],
+    bookPages: [47, 47], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Man_cleaning_window_with_spray_bottle_in_bright_room_during_daytime.jpg/960px-Man_cleaning_window_with_spray_bottle_in_bright_room_during_daytime.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Man_cleaning_window_with_spray_bottle_in_bright_room_during_daytime.jpg",
+      credit: "Shixart1985", license: "CC BY 2.0",
+    },
     entries: [
       { en: "broom", vi: "chổi" },
       { en: "bucket/pail", vi: "thùng" },
@@ -919,7 +1098,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "household-problems-and-repairs", unit: 3,
     unitEn: "Housing", unitVi: "Nhà Cửa",
     topicEn: "Household Problems and Repairs", topicVi: "Sửa Chữa Vật Dụng Trong Nhà",
-    bookPages: [48, 49],
+    bookPages: [48, 49], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Person_repairs_a_kitchen_appliance_in_a_home_kitchen.jpg/960px-Person_repairs_a_kitchen_appliance_in_a_home_kitchen.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Person_repairs_a_kitchen_appliance_in_a_home_kitchen.jpg",
+      credit: "Shixart1985", license: "CC BY 2.0",
+    },
     entries: [
       { en: "ant(s)", vi: "kiến" },
       { en: "carpenter", vi: "thợ mộc" },
@@ -952,7 +1136,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "fruit", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Fruit", topicVi: "Trái Cây",
-    bookPages: [50, 50],
+    bookPages: [50, 50], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/DFC_4652_Late-night_fruit_stand_in_Pattaya_colorful_tropical_produce_glows_under_street_lamps_along_Nong_Pla_Lai_market.jpg/960px-DFC_4652_Late-night_fruit_stand_in_Pattaya_colorful_tropical_produce_glows_under_street_lamps_along_Nong_Pla_Lai_market.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:DFC_4652_Late-night_fruit_stand_in_Pattaya_colorful_tropical_produce_glows_under_street_lamps_along_Nong_Pla_Lai_market.jpg",
+      credit: "PattayaPatrol", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "apples", vi: "táo (bom)" },
       { en: "apricots", vi: "mơ" },
@@ -987,7 +1176,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "vegetables", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Vegetables", topicVi: "Rau",
-    bookPages: [51, 51],
+    bookPages: [51, 51], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/Fresh_vegetables_being_sold.jpg/960px-Fresh_vegetables_being_sold.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Fresh_vegetables_being_sold.jpg",
+      credit: "Billjones94", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "artichokes", vi: "ác-ti-sô" },
       { en: "beets", vi: "củ cải" },
@@ -1018,7 +1212,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "meat-and-poultry", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Meat and Poultry", topicVi: "Thịt",
-    bookPages: [52, 52],
+    bookPages: [52, 52], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/Butcher_Sam_Meat_Market_and_China_Dragon_at_Tallahassee_Shopping_Center.jpg/960px-Butcher_Sam_Meat_Market_and_China_Dragon_at_Tallahassee_Shopping_Center.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Butcher_Sam_Meat_Market_and_China_Dragon_at_Tallahassee_Shopping_Center.jpg",
+      credit: "The Bushranger", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "bacon", vi: "thịt bây-kờn" },
       { en: "beef ribs", vi: "sườn bò" },
@@ -1048,7 +1247,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "deli-and-seafood", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Deli and Seafood", topicVi: "Đồ Ăn Làm Sẵn Và Đồ Biển",
-    bookPages: [53, 53],
+    bookPages: [53, 53], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Fish_stall_at_Barcelona_market_%282929374193%29.jpg/960px-Fish_stall_at_Barcelona_market_%282929374193%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Fish_stall_at_Barcelona_market_(2929374193).jpg",
+      credit: "Andy Mitchell from Glasgow, UK", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "American cheese", vi: "phó-mát My" },
       { en: "catfish", vi: "cá kétish" },
@@ -1083,7 +1287,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "the-market", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "The Market", topicVi: "Chợ",
-    bookPages: [54, 55],
+    bookPages: [54, 55], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/DFC_1752_A_vendor_wearing_a_face_mask_hands_a_bag_of_fresh_fruit_to_a_customer_at_a_bustling_outdoor_market_stall_filled_with_bananas_grapes_and_other_produce.jpg/960px-thumbnail.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:DFC_1752_A_vendor_wearing_a_face_mask_hands_a_bag_of_fresh_fruit_to_a_customer_at_a_bustling_outdoor_market_stall_filled_with_bananas_grapes_and_other_produce.jpg",
+      credit: "PattayaPatrol", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "aisle", vi: "lối đi (ở chợ)" },
       { en: "aluminum foil", vi: "giấy nhôm để bao" },
@@ -1138,7 +1347,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "containers-and-packaged-foods", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Containers and Packaged Foods", topicVi: "Hộp Đựng Và Thực Phẩm Đóng Gói",
-    bookPages: [56, 56],
+    bookPages: [56, 56], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Food_container.jpg/960px-Food_container.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Food_container.jpg",
+      credit: "Сергей Михель", license: "CC0",
+    },
     entries: [
       { en: "a bottle of soda", vi: "chai nước ngọt đựng loại phó-mát một xách sô-đa 6 lon" },
       { en: "a container of cottage cheese", vi: "một gói bánh kúk-ki" },
@@ -1160,7 +1374,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "weights-and-measures", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Weights and Measures", topicVi: "Trọng Lượng Và Đo Lường",
-    bookPages: [57, 57],
+    bookPages: [57, 57], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Abwaage_der_Zutaten.JPG/960px-Abwaage_der_Zutaten.JPG",
+      page: "https://commons.wikimedia.org/wiki/File:Abwaage_der_Zutaten.JPG",
+      credit: "Wald1siedel", license: "CC BY-SA 3.0",
+    },
     entries: [
       { en: "a 1/2 cup of raisins", vi: "một 1/2 tách nho khô" },
       { en: "a 1/4 cup of brown sugar", vi: "một 1/4 tách đường vàng" },
@@ -1189,7 +1408,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "food-preparation", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Food Preparation", topicVi: "Nấu Ăn",
-    bookPages: [58, 58],
+    bookPages: [58, 58], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Food-lunch-meal-tomatoes_%2824218470482%29.jpg/960px-Food-lunch-meal-tomatoes_%2824218470482%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Food-lunch-meal-tomatoes_(24218470482).jpg",
+      credit: "www.Pixel.la Free Stock Photos", license: "CC0",
+    },
     entries: [
       { en: "Bake at for 45 minutes", vi: "ở 380 độ trong 45 phút" },
       { en: "Boil the chicken", vi: "Luộc gà" },
@@ -1218,7 +1442,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "kitchen-utensils", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Kitchen Utensils", topicVi: "Dụng Cụ Nhà Bếp",
-    bookPages: [59, 59],
+    bookPages: [59, 59], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Kitchen_utensils-01.jpg/960px-Kitchen_utensils-01.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Kitchen_utensils-01.jpg",
+      credit: "Jeppestown", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "cookie . pie pan", vi: "làm" },
       { en: "double boiler", vi: "nồi luộc hai tầng" },
@@ -1231,7 +1460,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "fast-food", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "Fast Food", topicVi: "Thực Đơn Của Quán Đồ Ăn Liền",
-    bookPages: [60, 60],
+    bookPages: [60, 60], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/Burger_%2B_Fries_Daily_Special%2C_South_Bird_Hot_Chicken%2C_2026_%2801%29.jpg/960px-Burger_%2B_Fries_Daily_Special%2C_South_Bird_Hot_Chicken%2C_2026_%2801%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Burger_%2B_Fries_Daily_Special,_South_Bird_Hot_Chicken,_2026_(01).jpg",
+      credit: "Bahnfrend", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "cheeseburger", vi: "chiz-bơ-gơ" },
       { en: "counter", vi: "quầy" },
@@ -1257,7 +1491,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-coffee-shop-menu", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "A Coffee Shop Menu", topicVi: "Thực Đơn Của Quán Cà Phê",
-    bookPages: [61, 61],
+    bookPages: [61, 61], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Doutor_Coffee_Shop._%2853208125399%29.jpg/960px-Doutor_Coffee_Shop._%2853208125399%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Doutor_Coffee_Shop._(53208125399).jpg",
+      credit: "MIKI Yoshihito", license: "CC BY 2.0",
+    },
     entries: [
       { en: "bacon", vi: "gà quay thịt bây-kân" },
       { en: "baked potato", vi: "khoai tây nướng (Id)" },
@@ -1288,7 +1527,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-restaurant", unit: 4,
     unitEn: "Food", unitVi: "Thực Phẩm",
     topicEn: "A Restaurant", topicVi: "Nhà Hàng",
-    bookPages: [62, 63],
+    bookPages: [62, 63], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/29/Galatoire%27s_dinner_table_2009.jpg/960px-Galatoire%27s_dinner_table_2009.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Galatoire%27s_dinner_table_2009.jpg",
+      credit: "uberzombie", license: "CC BY 2.0",
+    },
     entries: [
       { en: "bread-and-butter", vi: "đĩa bánh mì và bơ" },
       { en: "busperson", vi: "đầu bếp người rửa chén bát" },
@@ -1331,7 +1575,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "clothing-i", unit: 5,
     unitEn: "Clothing", unitVi: "Y Phục",
     topicEn: "Clothing I", topicVi: "Y Phục I",
-    bookPages: [64, 65],
+    bookPages: [64, 65], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/DFC_1570%2C_a_woman_shopping_for_clothes_at_an_outdoor_market_-_Flickr_-_PattayaPatrol.jpg/960px-DFC_1570%2C_a_woman_shopping_for_clothes_at_an_outdoor_market_-_Flickr_-_PattayaPatrol.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:DFC_1570,_a_woman_shopping_for_clothes_at_an_outdoor_market_-_Flickr_-_PattayaPatrol.jpg",
+      credit: "Pattaya Patrol from Pattaya", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "cardigan sweater", vi: "áo ấm kiểu bảo thủ" },
       { en: "dress", vi: "áo đầm/ đồ đầm" },
@@ -1358,7 +1607,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "clothing-ii", unit: 5,
     unitEn: "Clothing", unitVi: "Y Phục",
     topicEn: "Clothing II", topicVi: "Y Phục II",
-    bookPages: [66, 66],
+    bookPages: [66, 66], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Women_in_Iceland_wearing_winter_clothing.jpg/960px-Women_in_Iceland_wearing_winter_clothing.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Women_in_Iceland_wearing_winter_clothing.jpg",
+      credit: "Maarten Visser from Capelle aan den IJssel, Nederland", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "baseball cap", vi: "mũ lưỡi trai" },
       { en: "cap", vi: "mũ, nón" },
@@ -1395,7 +1649,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "clothing-iii", unit: 5,
     unitEn: "Clothing", unitVi: "Y Phục",
     topicEn: "Clothing III", topicVi: "Y Phục III",
-    bookPages: [67, 67],
+    bookPages: [67, 67], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/An_unidentified_man_wearing_a_formal_suit_-_DPLA_-_e4dcd90443e9312e25ce85b3115a6667_%28page_1%29.jpg/960px-An_unidentified_man_wearing_a_formal_suit_-_DPLA_-_e4dcd90443e9312e25ce85b3115a6667_%28page_1%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:An_unidentified_man_wearing_a_formal_suit_-_DPLA_-_e4dcd90443e9312e25ce85b3115a6667_(page_1).jpg",
+      credit: "Wikimedia Commons", license: "Public domain",
+    },
     entries: [
       { en: "bathrobe", vi: "áo khoác ngoài" },
       { en: "bike shorts", vi: "quần đùi đua xe đạp" },
@@ -1424,7 +1683,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "shoes-and-accessories", unit: 5,
     unitEn: "Clothing", unitVi: "Y Phục",
     topicEn: "Shoes and Accessories", topicVi: "Giày Và Phụ Tùng",
-    bookPages: [68, 69],
+    bookPages: [68, 69], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/DFC_3749_A_young_woman_browses_a_busy_market_stall_filled_with_colorful_backpacks_shoes_and_packaged_goods_while_another_shopper_smiles_in_the_foreground.jpg/960px-DFC_3749_A_young_woman_browses_a_busy_market_stall_filled_with_colorful_backpacks_shoes_and_packaged_goods_while_another_shopper_smiles_in_the_foreground.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:DFC_3749_A_young_woman_browses_a_busy_market_stall_filled_with_colorful_backpacks_shoes_and_packaged_goods_while_another_shopper_smiles_in_the_foreground.jpg",
+      credit: "PattayaPatrol", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "athletic shoes", vi: "giầy thể thao" },
       { en: "backpack/bookbag", vi: "cặp đeo sau lưng" },
@@ -1473,7 +1737,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "describing-clothes", unit: 5,
     unitEn: "Clothing", unitVi: "Y Phục",
     topicEn: "Describing Clothes", topicVi: "Mô Tả Y Phục",
-    bookPages: [70, 71],
+    bookPages: [70, 71], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Clothes_line_in_Delhi.jpg/960px-Clothes_line_in_Delhi.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Clothes_line_in_Delhi.jpg",
+      credit: "VictoriaVarg", license: "CC BY 2.0",
+    },
     entries: [
       { en: "broken zipper", vi: "hư phẹc-mơ-tuya" },
       { en: "casual dress", vi: "đồ mặc xuyềnh xoàng (không theo nghỉ thức)" },
@@ -1523,7 +1792,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "doing-the-laundry", unit: 5,
     unitEn: "Clothing", unitVi: "Y Phục",
     topicEn: "Doing the Laundry", topicVi: "Giặt Đồ",
-    bookPages: [72, 72],
+    bookPages: [72, 72], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Drum_of_a_washing_machine_%28Bosch_Maxx_WFO_2440%29.jpg/960px-Drum_of_a_washing_machine_%28Bosch_Maxx_WFO_2440%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Drum_of_a_washing_machine_(Bosch_Maxx_WFO_2440).jpg",
+      credit: "Petar Milošević", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "Add the detergent", vi: "Thêm bột giặt bỏ bột giặt vào" },
       { en: "bleach", vi: "thuốc tẩy" },
@@ -1556,7 +1830,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "sewing-and-alterations", unit: 5,
     unitEn: "Clothing", unitVi: "Y Phục",
     topicEn: "Sewing and Alterations", topicVi: "Khâu May Và Sửa Đồ",
-    bookPages: [73, 73],
+    bookPages: [73, 73], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/A_sewing_machine.jpg/960px-A_sewing_machine.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:A_sewing_machine.jpg",
+      credit: "Jalamcy2023", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "button", vi: "nút /khuy" },
       { en: "buttonhole", vi: "16 gai nút" },
@@ -1586,7 +1865,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "the-body", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "The Body", topicVi: "Cơ Thể",
-    bookPages: [74, 75],
+    bookPages: [74, 75], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Eva_Crans_gym_class_at_the_Model_School_1911_%283191509084%29.jpg/960px-Eva_Crans_gym_class_at_the_Model_School_1911_%283191509084%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Eva_Crans_gym_class_at_the_Model_School_1911_(3191509084).jpg",
+      credit: "Snyder, Frank R. \n\nFlickr: Miami U. Libraries - Digital Collections", license: "Public domain",
+    },
     entries: [
       { en: "abdomen", vi: "bụng" },
       { en: "ankle", vi: "mắt cá chân" },
@@ -1652,7 +1936,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "personal-hygiene", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "Personal Hygiene", topicVi: "Vệ Sinh Cá Nhân",
-    bookPages: [76, 77],
+    bookPages: [76, 77], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/American_Red_Cross_Personal_Hygiene_Kit_with_Nail_Clippers%2C_Tweezers%2C_and_Scissors.jpg/960px-American_Red_Cross_Personal_Hygiene_Kit_with_Nail_Clippers%2C_Tweezers%2C_and_Scissors.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:American_Red_Cross_Personal_Hygiene_Kit_with_Nail_Clippers,_Tweezers,_and_Scissors.jpg",
+      credit: "Twillisjr", license: "CC0",
+    },
     entries: [
       { en: "aftershave", vi: "thuốc thoa mặt (sau khi cạo)" },
       { en: "barrette", vi: "kẹp tóc" },
@@ -1714,7 +2003,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "symptoms-and-injuries", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "Symptoms and Injuries", topicVi: "Triệu Chứng Và Thương Tích",
-    bookPages: [78, 78],
+    bookPages: [78, 78], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Child_shows_fear_during_a_doctors_visit_while_being_examined_by_a_female_physician_in_a_medical_office.jpg/960px-Child_shows_fear_during_a_doctors_visit_while_being_examined_by_a_female_physician_in_a_medical_office.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Child_shows_fear_during_a_doctors_visit_while_being_examined_by_a_female_physician_in_a_medical_office.jpg",
+      credit: "Shixart1985", license: "CC BY 2.0",
+    },
     entries: [
       { en: "backache", vi: "đau lưng" },
       { en: "blister", vi: "phù chảy fy va nước" },
@@ -1741,7 +2035,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "illnesses-and-medical-conditions", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "Illnesses and Medical Conditions", topicVi: "Bệnh Hoạn Và Tình Trạng Sức Khỏe",
-    bookPages: [79, 79],
+    bookPages: [79, 79], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Health_Needs_in_Iganga_Hospital.jpg/960px-Health_Needs_in_Iganga_Hospital.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Health_Needs_in_Iganga_Hospital.jpg",
+      credit: "REV AAMPAIRE Zephania David", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "allergies", vi: "dị ứng" },
       { en: "asthma", vi: "suyễn" },
@@ -1762,7 +2061,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "health-care", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "Health Care", topicVi: "Chăm Sóc Sức Khỏe",
-    bookPages: [80, 81],
+    bookPages: [80, 81], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Defense.gov_photo_essay_090711-D-1852B-559.jpg/960px-Defense.gov_photo_essay_090711-D-1852B-559.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Defense.gov_photo_essay_090711-D-1852B-559.jpg",
+      credit: "Fred W. Baker III", license: "Public domain",
+    },
     entries: [
       { en: "air purifier", vi: "máy loc không khí" },
       { en: "antacid", vi: "thuốc giảm độ acid" },
@@ -1796,7 +2100,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "medical-emergencies", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "Medical Emergencies", topicVi: "Cứu Cấp Y Tế",
-    bookPages: [82, 82],
+    bookPages: [82, 82], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/Bruce_Woodbury_Beltway_Medical_Incident_4.jpg/960px-Bruce_Woodbury_Beltway_Medical_Incident_4.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Bruce_Woodbury_Beltway_Medical_Incident_4.jpg",
+      credit: "Noah Wulf", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "be injured/be hurt", vi: "bị thương" },
       { en: "be injured/be hurt G. get frostbite M. bleed", vi: "bị thương bị bang cong chay mau" },
@@ -1822,7 +2131,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "first-aid", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "First Aid", topicVi: "Cứu Thương",
-    bookPages: [83, 83],
+    bookPages: [83, 83], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/First-aid_travel_kit_1.jpg/960px-First-aid_travel_kit_1.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:First-aid_travel_kit_1.jpg",
+      credit: "Renée Kools", license: "CC BY 4.0",
+    },
     entries: [
       { en: "antibacterial ointment", vi: "kem khử trùng" },
       { en: "antihistamine cream", vi: "kem giảm dau" },
@@ -1839,7 +2153,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "clinics", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "Clinics", topicVi: "Y Viện",
-    bookPages: [84, 84],
+    bookPages: [84, 84], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/A_medical_eye_clinic_waiting_room_in_Exeter_-_geograph.org.uk_-_7418653.jpg/960px-A_medical_eye_clinic_waiting_room_in_Exeter_-_geograph.org.uk_-_7418653.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:A_medical_eye_clinic_waiting_room_in_Exeter_-_geograph.org.uk_-_7418653.jpg",
+      credit: "Roger A Smith", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "blood pressure gauge", vi: "máy đo áp huyết" },
       { en: "braces", vi: "niềng răng" },
@@ -1868,7 +2187,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "medical-and-dental-exams", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "Medical and Dental Exams", topicVi: "Khám Bệnh Và Khám Răng",
-    bookPages: [85, 85],
+    bookPages: [85, 85], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Children_standing_in_line_to_see_the_dentist_%2828393844689%29.jpg/960px-Children_standing_in_line_to_see_the_dentist_%2828393844689%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Children_standing_in_line_to_see_the_dentist_(28393844689).jpg",
+      credit: "National Library of Medicine - History of Medicine", license: "No restrictions",
+    },
     entries: [
       { en: "draw...blood", vi: "lấy máu" },
       { en: "examine...eyes", vi: "khám mắt" },
@@ -1886,7 +2210,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-hospital", unit: 6,
     unitEn: "Health", unitVi: "Sức Khỏe",
     topicEn: "A Hospital", topicVi: "Bệnh Viện",
-    bookPages: [86, 87],
+    bookPages: [86, 87], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/Hallway_old_hospital_LAC%2BUSC.jpg/960px-Hallway_old_hospital_LAC%2BUSC.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Hallway_old_hospital_LAC%2BUSC.jpg",
+      credit: "Downtowngal", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "anesthesiologist", vi: "chuyên viên gây mê" },
       { en: "bed", vi: "bộ phận điều khiển giường áo bệnh viện bàn bên giường" },
@@ -1925,7 +2254,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "city-streets", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "City Streets", topicVi: "Đường Phố",
-    bookPages: [88, 89],
+    bookPages: [88, 89], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Barrett_Street_-_the_traffic-free_part_-_Marylebone%2C_City_of_Westminster_-_geograph.org.uk_-_7428596.jpg/960px-Barrett_Street_-_the_traffic-free_part_-_Marylebone%2C_City_of_Westminster_-_geograph.org.uk_-_7428596.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Barrett_Street_-_the_traffic-free_part_-_Marylebone,_City_of_Westminster_-_geograph.org.uk_-_7428596.jpg",
+      credit: "Ruth Sharville", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "church", vi: "nhà th" },
       { en: "coffee shop", vi: "uán cà-phê" },
@@ -1942,7 +2276,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "an-intersection", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "An Intersection", topicVi: "Ngã Tư",
-    bookPages: [90, 91],
+    bookPages: [90, 91], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/City_Lights_%28248468305%29.jpeg/960px-City_Lights_%28248468305%29.jpeg",
+      page: "https://commons.wikimedia.org/wiki/File:City_Lights_(248468305).jpeg",
+      credit: "Márcio Gomes", license: "CC0",
+    },
     entries: [
       { en: "bus stop", vi: "trạm xe buýt" },
       { en: "copy center/print shop", vi: "tiệm copy, tiệm in" },
@@ -1976,7 +2315,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-mall", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "A Mall", topicVi: "Trung Tâm Thương Mại",
-    bookPages: [92, 93],
+    bookPages: [92, 93], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/Passageway_with_stores_in_Torp_shopping_mall%2C_Uddevalla_1.jpg/960px-Passageway_with_stores_in_Torp_shopping_mall%2C_Uddevalla_1.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Passageway_with_stores_in_Torp_shopping_mall,_Uddevalla_1.jpg",
+      credit: "W.carter", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "bookstore", vi: "tiệm sách" },
       { en: "candy store", vi: "tiệm kẹo" },
@@ -2004,7 +2348,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-childcare-center", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "A Childcare Center", topicVi: "Trung Tâm Nuôi Dạy Trẻ",
-    bookPages: [94, 95],
+    bookPages: [94, 95], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/Teachers_lead_the_children_into_F%C3%A6rie_Garden_23-09-2025_E1.jpg/960px-Teachers_lead_the_children_into_F%C3%A6rie_Garden_23-09-2025_E1.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Teachers_lead_the_children_into_F%C3%A6rie_Garden_23-09-2025_E1.jpg",
+      credit: "Sombreromo8no4", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "baby food", vi: "đồ của ăn em bé" },
       { en: "bottle", vi: "bình" },
@@ -2031,7 +2380,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "u-s-mail", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "U.S. Mail", topicVi: "Bưu Điện Hoa Kỳ",
-    bookPages: [96, 96],
+    bookPages: [96, 96], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Mail_is_Morale-_Newly_established_post_office_in_Camp_Mujuk_receives_mail_%288833633%29.jpg/960px-Mail_is_Morale-_Newly_established_post_office_in_Camp_Mujuk_receives_mail_%288833633%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Mail_is_Morale-_Newly_established_post_office_in_Camp_Mujuk_receives_mail_(8833633).jpg",
+      credit: "U.S. Marine Corps photo by Cpl. Thomas Sheng", license: "Public domain",
+    },
     entries: [
       { en: "air letter/aerogramme", vi: "thu máy bay /thư hang không" },
       { en: "ground post/ parcel post", vi: "bưu kiện" },
@@ -2043,7 +2397,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-bank", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "A Bank", topicVi: "Ngân Hàng",
-    bookPages: [97, 97],
+    bookPages: [97, 97], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/de/A_SouthState_Bank_in_Hiawassee%2C_Georgia.jpg/960px-A_SouthState_Bank_in_Hiawassee%2C_Georgia.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:A_SouthState_Bank_in_Hiawassee,_Georgia.jpg",
+      credit: "Harrison Keely", license: "CC BY 4.0",
+    },
     entries: [
       { en: "ATM card", vi: "thẻ ATM/thẻ rút tiền" },
       { en: "balance", vi: "tiền còn trong trương mục" },
@@ -2065,7 +2424,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-library", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "A Library", topicVi: "Thư Viện",
-    bookPages: [98, 98],
+    bookPages: [98, 98], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Interior_of_North_Kwai_Chung_Public_Library.jpg/960px-Interior_of_North_Kwai_Chung_Public_Library.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Interior_of_North_Kwai_Chung_Public_Library.jpg",
+      credit: "Prosperity Horizons", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "audiocassette", vi: "băng cát-sét" },
       { en: "author", vi: "tac giả" },
@@ -2085,7 +2449,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "the-legal-system", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "The Legal System", topicVi: "Hệ Thống Pháp Luật",
-    bookPages: [99, 99],
+    bookPages: [99, 99], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Hong_Kong_and_the_Scales_of_Justice.jpg/960px-Hong_Kong_and_the_Scales_of_Justice.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Hong_Kong_and_the_Scales_of_Justice.jpg",
+      credit: "Scotted400", license: "CC0",
+    },
     entries: [
       { en: "arrest a suspect", vi: "bat ké bi tinh nghi" },
       { en: "bailiff", vi: "nhân viên đóng tiền thế chân" },
@@ -2106,7 +2475,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "crime", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "Crime", topicVi: "Tội Ác",
-    bookPages: [100, 100],
+    bookPages: [100, 100], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/Crime_Scene_Investigation_Unit%2C_Royal_Gibraltar_Police.jpg/960px-Crime_Scene_Investigation_Unit%2C_Royal_Gibraltar_Police.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Crime_Scene_Investigation_Unit,_Royal_Gibraltar_Police.jpg",
+      credit: "Harry Mitchell", license: "CC BY 3.0",
+    },
     entries: [
       { en: "assault", vi: "hành hung /bạo hành" },
       { en: "drunk driving", vi: "say rượu lái xe" },
@@ -2123,7 +2497,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "public-safety", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "Public Safety", topicVi: "An Toàn Công Cộng",
-    bookPages: [101, 101],
+    bookPages: [101, 101], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Female_Police_Officer.jpg/960px-Female_Police_Officer.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Female_Police_Officer.jpg",
+      credit: "ReenaLiftCarry", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "Don’t drink and drive", vi: "Không được uống rượu lái xe" },
       { en: "Don’t open your door to strangers", vi: "Đừng mở cửa cho người lạ" },
@@ -2141,7 +2520,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "emergencies-and-natural-disasters", unit: 7,
     unitEn: "Community", unitVi: "Cộng Đồng",
     topicEn: "Emergencies and Natural Disasters", topicVi: "Tai Họa Khẩn Cấp Và Thiên Tai",
-    bookPages: [102, 103],
+    bookPages: [102, 103], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/DRU_%E2%80%93_Disaster_Relief_Unit_%282014%29.jpg/960px-DRU_%E2%80%93_Disaster_Relief_Unit_%282014%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:DRU_%E2%80%93_Disaster_Relief_Unit_(2014).jpg",
+      credit: "Nina Bazza", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "airplane crash", vi: "máy bay rớt" },
       { en: "blizzard", vi: "bao tuyét" },
@@ -2163,7 +2547,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "public-transportation", unit: 8,
     unitEn: "Transportation", unitVi: "Giao Thông",
     topicEn: "Public Transportation", topicVi: "Giao Thông Công Cộng",
-    bookPages: [104, 104],
+    bookPages: [104, 104], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Passengers_waiting_to_board_the_International_Airport_bus_at_the_Europa_Bus_Centre_-_geograph.org.uk_-_5166274.jpg/960px-Passengers_waiting_to_board_the_International_Airport_bus_at_the_Europa_Bus_Centre_-_geograph.org.uk_-_5166274.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Passengers_waiting_to_board_the_International_Airport_bus_at_the_Europa_Bus_Centre_-_geograph.org.uk_-_5166274.jpg",
+      credit: "Eric Jones", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "meter", vi: "tá ì" },
       { en: "passenger", vi: "khách" },
@@ -2180,7 +2569,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "prepositions-of-motion", unit: 8,
     unitEn: "Transportation", unitVi: "Giao Thông",
     topicEn: "Prepositions of Motion", topicVi: "Giới Từ Chỉ Sự Vận Chuyển",
-    bookPages: [105, 105],
+    bookPages: [105, 105], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Largo_de_Santa_Luzia_%2B_Largo_das_Portas_do_Sol%2C_2008_%2801%29.jpg/960px-Largo_de_Santa_Luzia_%2B_Largo_das_Portas_do_Sol%2C_2008_%2801%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Largo_de_Santa_Luzia_%2B_Largo_das_Portas_do_Sol,_2008_(01).jpg",
+      credit: "Bahnfrend", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "across the water", vi: "bang qua dòng nước" },
       { en: "around the corner", vi: "cạnh ngã tư" },
@@ -2198,7 +2592,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "cars-and-trucks", unit: 8,
     unitEn: "Transportation", unitVi: "Giao Thông",
     topicEn: "Cars and Trucks", topicVi: "Xe Hơi Và Xe Vận Tải",
-    bookPages: [106, 106],
+    bookPages: [106, 106], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Moscow%2C_prospect_Andropova%2C_cars_and_trucks_April_2025_05.jpg/960px-Moscow%2C_prospect_Andropova%2C_cars_and_trucks_April_2025_05.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Moscow,_prospect_Andropova,_cars_and_trucks_April_2025_05.jpg",
+      credit: "Retired electrician", license: "CC0",
+    },
     entries: [
       { en: "compact", vi: "xe cỡ nhỏ" },
       { en: "convertible", vi: "xe mui trần" },
@@ -2220,7 +2619,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "directions-and-traffic-signs", unit: 8,
     unitEn: "Transportation", unitVi: "Giao Thông",
     topicEn: "Directions and Traffic Signs", topicVi: "Phương Hướng Và Bảng Hiệu Lưu Thông",
-    bookPages: [107, 107],
+    bookPages: [107, 107], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/01/Malaysia_Traffic-signs_Warning-sign-02b.jpg/960px-Malaysia_Traffic-signs_Warning-sign-02b.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Malaysia_Traffic-signs_Warning-sign-02b.jpg",
+      credit: "CEphoto, Uwe Aranas", license: "CC BY-SA 3.0",
+    },
     entries: [
       { en: "block", vi: "day nhà/ dẫy phố" },
       { en: "corner", vi: "góc đường" },
@@ -2244,7 +2648,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "parts-of-a-car-and-car-maintenance", unit: 8,
     unitEn: "Transportation", unitVi: "Giao Thông",
     topicEn: "Parts of a Car and Car Maintenance", topicVi: "Bộ Phận Xe Hơi Và Bảo Trì Xe Hơi",
-    bookPages: [108, 109],
+    bookPages: [108, 109], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Engine_components_displayed_in_a_red_car_during_a_mechanical_inspection_process_at_a_garage.jpg/960px-Engine_components_displayed_in_a_red_car_during_a_mechanical_inspection_process_at_a_garage.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Engine_components_displayed_in_a_red_car_during_a_mechanical_inspection_process_at_a_garage.jpg",
+      credit: "Shixart1985", license: "CC BY 2.0",
+    },
     entries: [
       { en: "accelerator /gas pedal", vi: "chân ga" },
       { en: "air conditioning", vi: "máy lạnh" },
@@ -2289,7 +2698,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-plane-trip", unit: 8,
     unitEn: "Transportation", unitVi: "Giao Thông",
     topicEn: "A Plane Trip", topicVi: "Chuyến Bay",
-    bookPages: [111, 111],
+    bookPages: [111, 111], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/De_Havilland_Canada_DHC-8-400_G-ECOJ_of_Flybe_at_Manchester_Airport_%28EGCC%29_%2824380619462%29.jpg/960px-De_Havilland_Canada_DHC-8-400_G-ECOJ_of_Flybe_at_Manchester_Airport_%28EGCC%29_%2824380619462%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:De_Havilland_Canada_DHC-8-400_G-ECOJ_of_Flybe_at_Manchester_Airport_(EGCC)_(24380619462).jpg",
+      credit: "Riik@mctr", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "buy your ticket", vi: "mua vé" },
       { en: "check your bags", vi: "gởi lý hành" },
@@ -2303,7 +2717,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "types-of-schools", unit: 9,
     unitEn: "Areas of Study", unitVi: "Học Đường",
     topicEn: "Types of Schools", topicVi: "Loại Trường Học",
-    bookPages: [112, 112],
+    bookPages: [112, 112], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/La_Veta_Public_Schools_building_entrance_area.JPG/960px-La_Veta_Public_Schools_building_entrance_area.JPG",
+      page: "https://commons.wikimedia.org/wiki/File:La_Veta_Public_Schools_building_entrance_area.JPG",
+      credit: "Jeffrey Beall", license: "CC BY 4.0",
+    },
     entries: [
       { en: "elementary school", vi: "trường tu học" },
       { en: "high school", vi: "cấp rung cấp học ba độ nhị trường" },
@@ -2315,7 +2734,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "english-composition", unit: 9,
     unitEn: "Areas of Study", unitVi: "Học Đường",
     topicEn: "English Composition", topicVi: "Luận Văn Bằng Anh Ngữ",
-    bookPages: [113, 113],
+    bookPages: [113, 113], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/2008-01-26_%28Editing_a_paper%29_-_31.jpg/960px-2008-01-26_%28Editing_a_paper%29_-_31.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:2008-01-26_(Editing_a_paper)_-_31.jpg",
+      credit: "Nic McPhee", license: "CC BY-SA 2.0",
+    },
     entries: [
       { en: "apostrophe", vi: "dấu ngoặc đơn" },
       { en: "colon hai", vi: "chấm" },
@@ -2333,7 +2757,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "u-s-government-and-citizenship", unit: 9,
     unitEn: "Areas of Study", unitVi: "Học Đường",
     topicEn: "U.S. Government and Citizenship", topicVi: "Chánh Quyền Hoa Kỳ Và Quyền Công Dân",
-    bookPages: [116, 116],
+    bookPages: [116, 116], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Capitol_Building_Full_View.jpg/960px-Capitol_Building_Full_View.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Capitol_Building_Full_View.jpg",
+      credit: "Noclip", license: "Public domain",
+    },
     entries: [
       { en: "be 18 years old", vi: "ít nhất là 18 tuổi" },
       { en: "be 18 years old E. pay taxes G. serve on a jury", vi: "ít nhất là 18 tuổi đóng thuế phục vụ trong bôì-thẩm-đoàn" },
@@ -2360,7 +2789,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "mathematics", unit: 9,
     unitEn: "Areas of Study", unitVi: "Học Đường",
     topicEn: "Mathematics", topicVi: "Toán Học",
-    bookPages: [118, 118],
+    bookPages: [118, 118], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Birla_Industrial_%26_Technological_Museum_-_Mathematics_Gallery_-_Kolkata_2011-03-03_1859.JPG/960px-Birla_Industrial_%26_Technological_Museum_-_Mathematics_Gallery_-_Kolkata_2011-03-03_1859.JPG",
+      page: "https://commons.wikimedia.org/wiki/File:Birla_Industrial_%26_Technological_Museum_-_Mathematics_Gallery_-_Kolkata_2011-03-03_1859.JPG",
+      credit: "Biswarup Ganguly", license: "CC BY 3.0",
+    },
     entries: [
       { en: "algebra", vi: "đại số" },
       { en: "angle Types of math", vi: "Loại toán" },
@@ -2381,7 +2815,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "science", unit: 9,
     unitEn: "Areas of Study", unitVi: "Học Đường",
     topicEn: "Science", topicVi: "Khoa Học",
-    bookPages: [119, 119],
+    bookPages: [119, 119], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Southern_Arkansas_University_Biology_student_with_microscope.jpg/960px-Southern_Arkansas_University_Biology_student_with_microscope.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Southern_Arkansas_University_Biology_student_with_microscope.jpg",
+      credit: "Cdbrice00", license: "CC BY-SA 3.0",
+    },
     entries: [
       { en: "balance", vi: "vật lý học" },
       { en: "balance formula", vi: "công thie" },
@@ -2403,7 +2842,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "music", unit: 9,
     unitEn: "Areas of Study", unitVi: "Học Đường",
     topicEn: "Music", topicVi: "Âm Nhạc",
-    bookPages: [120, 120],
+    bookPages: [120, 120], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/U.S._Sailors_play_their_musical_instruments_while_performing_for_students%2C_teachers%2C_and_parents_at_Forrestal_Elementary_School_in_Great_Lakes%2C_Ill.%2C_April_14%2C_2011_110414-N-IK959-372.jpg/960px-thumbnail.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:U.S._Sailors_play_their_musical_instruments_while_performing_for_students,_teachers,_and_parents_at_Forrestal_Elementary_School_in_Great_Lakes,_Ill.,_April_14,_2011_110414-N-IK959-372.jpg",
+      credit: "Scott Thornbloom", license: "Public domain",
+    },
     entries: [
       { en: "bass French horn electric or keyboard", vi: "an bass Pháp, «an gàng điện" },
       { en: "bassoon", vi: "kèn fagot" },
@@ -2424,7 +2868,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "more-school-subjects", unit: 9,
     unitEn: "Areas of Study", unitVi: "Học Đường",
     topicEn: "More School Subjects", topicVi: "Các Môn Học Khác",
-    bookPages: [121, 121],
+    bookPages: [121, 121], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/In_Zaporizhzhia%2C_the_President_Visited_an_Underground_School_and_Spoke_with_Children_on_December_12%2C_2024_-_1.jpg/960px-In_Zaporizhzhia%2C_the_President_Visited_an_Underground_School_and_Spoke_with_Children_on_December_12%2C_2024_-_1.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:In_Zaporizhzhia,_the_President_Visited_an_Underground_School_and_Spoke_with_Children_on_December_12,_2024_-_1.jpg",
+      credit: "President Of Ukraine", license: "CC0",
+    },
     entries: [
       { en: "business education", vi: "ngành thương nghiệp" },
       { en: "chorus", vi: "ban hợp xướng" },
@@ -2443,7 +2892,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "energy-and-the-environment", unit: 9,
     unitEn: "Areas of Study", unitVi: "Học Đường",
     topicEn: "Energy and the Environment", topicVi: "Năng Lượng Và Môi Sinh",
-    bookPages: [126, 126],
+    bookPages: [126, 126], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/CSIRO_ScienceImage_2141_Solar_Array_at_the_CSIRO_Energy_Centre.jpg/960px-CSIRO_ScienceImage_2141_Solar_Array_at_the_CSIRO_Energy_Centre.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:CSIRO_ScienceImage_2141_Solar_Array_at_the_CSIRO_Energy_Centre.jpg",
+      credit: ", CSIRO", license: "CC BY 3.0",
+    },
     entries: [
       { en: "acid rain", vi: "mưa acid" },
       { en: "air pollution /smog", vi: "6 nhiễm không khí. khói" },
@@ -2470,7 +2924,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "trees-and-plants", unit: 10,
     unitEn: "Plants and Animals", unitVi: "Thực Vật Và Động Vật",
     topicEn: "Trees and Plants", topicVi: "Cây Cối",
-    bookPages: [128, 128],
+    bookPages: [128, 128], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Bali%2C_Forest%2C_Trees%2C_East_Bali%2C_Indonesia.jpg/960px-Bali%2C_Forest%2C_Trees%2C_East_Bali%2C_Indonesia.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Bali,_Forest,_Trees,_East_Bali,_Indonesia.jpg",
+      credit: "Vyacheslav Argenberg", license: "CC BY 4.0",
+    },
     entries: [
       { en: "berries", vi: "cây bexri" },
       { en: "birch", vi: "cây phong" },
@@ -2499,7 +2958,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "flowers", unit: 10,
     unitEn: "Plants and Animals", unitVi: "Thực Vật Và Động Vật",
     topicEn: "Flowers", topicVi: "Hoa",
-    bookPages: [129, 129],
+    bookPages: [129, 129], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Colorful_spring_garden.jpg/960px-Colorful_spring_garden.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Colorful_spring_garden.jpg",
+      credit: "Anita Martinz from Klagenfurt, Austria", license: "CC BY 2.0",
+    },
     entries: [
       { en: "bouquet", vi: "bó hoa" },
       { en: "carnation", vi: "hoa cẩm chướng" },
@@ -2523,7 +2987,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "marine-life-amphibians-and-reptiles", unit: 10,
     unitEn: "Plants and Animals", unitVi: "Thực Vật Và Động Vật",
     topicEn: "Marine Life, Amphibians, and Reptiles", topicVi: "Thủy Sản, Giống Lội Nước Và Giống Bò Sát",
-    bookPages: [130, 131],
+    bookPages: [130, 131], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/HIHWNMS_-_green_sea_turtle_%2834024454700%29.jpg/960px-HIHWNMS_-_green_sea_turtle_%2834024454700%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:HIHWNMS_-_green_sea_turtle_(34024454700).jpg",
+      credit: "National Marine Sanctuaries", license: "Public domain",
+    },
     entries: [
       { en: "alligator", vi: "sấu" },
       { en: "anemone", vi: "hãi qui" },
@@ -2549,7 +3018,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "domestic-animals-and-rodents", unit: 10,
     unitEn: "Plants and Animals", unitVi: "Thực Vật Và Động Vật",
     topicEn: "Domestic Animals and Rodents", topicVi: "Thú Vật Nuôi Trong Nhà Và Loài Gặm Nhấm",
-    bookPages: [133, 133],
+    bookPages: [133, 133], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Parisa_-_SCAT_%40_Petsmart_Adoption_Centre_%28June_6_2016%29_%2826921029834%29.jpg/960px-Parisa_-_SCAT_%40_Petsmart_Adoption_Centre_%28June_6_2016%29_%2826921029834%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Parisa_-_SCAT_@_Petsmart_Adoption_Centre_(June_6_2016)_(26921029834).jpg",
+      credit: "Kyla Duhamel from Saskatoon, Canada", license: "CC BY 2.0",
+    },
     entries: [
       { en: "chipmunk", vi: "sóc chuột" },
       { en: "cow", vi: "bò" },
@@ -2577,7 +3051,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "mammals", unit: 10,
     unitEn: "Plants and Animals", unitVi: "Thực Vật Và Động Vật",
     topicEn: "Mammals", topicVi: "Động Vật Có Vú",
-    bookPages: [134, 135],
+    bookPages: [134, 135], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/016a_Desert-adapted_elephant_dust_bathing_in_Damaraland_Photo_by_Giles_Laurent.jpg/960px-016a_Desert-adapted_elephant_dust_bathing_in_Damaraland_Photo_by_Giles_Laurent.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:016a_Desert-adapted_elephant_dust_bathing_in_Damaraland_Photo_by_Giles_Laurent.jpg",
+      credit: "Giles Laurent", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "anteater", vi: "loài ăn kiến" },
       { en: "anteater gorilla", vi: "loài ăn kiến khỉ đột" },
@@ -2611,7 +3090,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "jobs-and-occupations-a-h", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "Jobs and Occupations A-H", topicVi: "Việc Làm Và Nghề Nghiệp A-H",
-    bookPages: [136, 137],
+    bookPages: [136, 137], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Doctor_examines_patient.jpg/960px-Doctor_examines_patient.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Doctor_examines_patient.jpg",
+      credit: "Unknown photographer", license: "Public domain",
+    },
     entries: [
       { en: "architect", vi: "kiến trúc sư" },
       { en: "architect businessman/businesswoman", vi: "nghiệp nữ) kiến trúc sư nhà doanh (nam" },
@@ -2640,7 +3124,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "jobs-and-occupations-h-w", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "Jobs and Occupations H-W", topicVi: "Việc Làm Và Nghề Nghiệp H-W",
-    bookPages: [138, 139],
+    bookPages: [138, 139], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Postman_delivering_to_Greenbank%2C_Helston%2C_Cornwall_-_August_2022.jpg/960px-Postman_delivering_to_Greenbank%2C_Helston%2C_Cornwall_-_August_2022.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Postman_delivering_to_Greenbank,_Helston,_Cornwall_-_August_2022.jpg",
+      credit: "Mutney", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "interpreter/translator", vi: "dịch viên người dịch thông" },
       { en: "janitor/custodian", vi: "gác dan/ lao công" },
@@ -2679,7 +3168,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "job-skills", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "Job Skills", topicVi: "Kỹ Năng Làm Việc",
-    bookPages: [140, 140],
+    bookPages: [140, 140], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/PP24-2_Engineering_project_in_Quang_Ngai%2C_Vietnam_%288605549%29.jpg/960px-PP24-2_Engineering_project_in_Quang_Ngai%2C_Vietnam_%288605549%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:PP24-2_Engineering_project_in_Quang_Ngai,_Vietnam_(8605549).jpg",
+      credit: "U.S. Navy photo by Petty Officer 1st Class Ryan McLearnon", license: "Public domain",
+    },
     entries: [
       { en: "assist medical patients", vi: "giúp đỡ các bệnh nhân" },
       { en: "do manual labor", vi: "làm việc chân tay" },
@@ -2703,7 +3197,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "job-search", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "Job Search", topicVi: "Tìm Việc",
-    bookPages: [141, 141],
+    bookPages: [141, 141], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/People_waiting_to_be_interviewed_at_the_employment_agency_8d18038v.jpg/960px-People_waiting_to_be_interviewed_at_the_employment_agency_8d18038v.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:People_waiting_to_be_interviewed_at_the_employment_agency_8d18038v.jpg",
+      credit: "Marjory Collins", license: "Public domain",
+    },
     entries: [
       { en: "ask about benefits", vi: "hỏi về quyền lợi" },
       { en: "ask about the hours", vi: "hỏi về số giờ làm việc" },
@@ -2724,7 +3223,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "an-office", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "An Office", topicVi: "Văn Phòng",
-    bookPages: [142, 143],
+    bookPages: [142, 143], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/African_in_a_office_with_a_laptop.jpg/960px-African_in_a_office_with_a_laptop.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:African_in_a_office_with_a_laptop.jpg",
+      credit: "Minette Lontsie", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "appointment book", vi: "sổ" },
       { en: "clipboard", vi: "bang kẹp để ghi chép" },
@@ -2772,7 +3276,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "computers", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "Computers", topicVi: "Máy Điện Toán",
-    bookPages: [144, 144],
+    bookPages: [144, 144], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Computer_Lab_-_SRMPS_-_Shri_Ramswaroop_Memorial_Public_School.jpg/960px-Computer_Lab_-_SRMPS_-_Shri_Ramswaroop_Memorial_Public_School.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Computer_Lab_-_SRMPS_-_Shri_Ramswaroop_Memorial_Public_School.jpg",
+      credit: "Shri Ramswaroop Memorial Public School", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "cable", vi: "dây cáp" },
       { en: "CD-ROM", vi: "bộ phận bảo vệ khi có vọt điện tấm mẹ (motherboard) đĩa CD ROM" },
@@ -2797,7 +3306,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-hotel", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "A Hotel", topicVi: "Khách Sạn",
-    bookPages: [145, 145],
+    bookPages: [145, 145], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5c/130922_Windsor_Hotel_Toya_Resort_%26_Spa_Toyako_Hokkaido_Japan28s5.jpg/960px-130922_Windsor_Hotel_Toya_Resort_%26_Spa_Toyako_Hokkaido_Japan28s5.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:130922_Windsor_Hotel_Toya_Resort_%26_Spa_Toyako_Hokkaido_Japan28s5.jpg",
+      credit: "663highland", license: "CC BY 2.5",
+    },
     entries: [
       { en: "front desk", vi: "ban giấ" },
       { en: "hall", vi: "hội trường" },
@@ -2809,7 +3323,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-factory", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "A Factory", topicVi: "Nhà Máy",
-    bookPages: [146, 146],
+    bookPages: [146, 146], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Machine_working_in_a_factory_while_cutting_material_on_a_production_line_in_the_workshop.jpg/960px-Machine_working_in_a_factory_while_cutting_material_on_a_production_line_in_the_workshop.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Machine_working_in_a_factory_while_cutting_material_on_a_production_line_in_the_workshop.jpg",
+      credit: "Shixart1985", license: "CC BY 2.0",
+    },
     entries: [
       { en: "assembly line", vi: "‘ay chuyền lấp ráp" },
       { en: "fact", vi: "côn" },
@@ -2828,7 +3347,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "job-safety", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "Job Safety", topicVi: "An Toàn Trong Khi Làm Việc",
-    bookPages: [147, 147],
+    bookPages: [147, 147], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Woman_with_chop_saw_and_hard_hat_%283401747795%29.jpg/960px-Woman_with_chop_saw_and_hard_hat_%283401747795%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Woman_with_chop_saw_and_hard_hat_(3401747795).jpg",
+      credit: "Sean McGrath from Saint John, NB, Canada", license: "CC BY 2.0",
+    },
     entries: [
       { en: "back support", vi: "đỡ lưng" },
       { en: "biohazard", vi: "rủi ro về sinh học" },
@@ -2856,7 +3380,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "construction", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "Construction", topicVi: "Xây Cất",
-    bookPages: [149, 149],
+    bookPages: [149, 149], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/A_break_for_the_construction_workers_at_the_Rokin_at_the_building_site_of_the_future_metro_station_underground%3B_free_photo_of_Amsterdam_streets_by_Fons_Heijnsbroek%2C_2007.jpg/960px-thumbnail.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:A_break_for_the_construction_workers_at_the_Rokin_at_the_building_site_of_the_future_metro_station_underground;_free_photo_of_Amsterdam_streets_by_Fons_Heijnsbroek,_2007.jpg",
+      credit: "Fons Heijnsbroek", license: "CC0",
+    },
     entries: [
       { en: "beam/girder", vi: "xà! dầm" },
       { en: "concrete", vi: "xi mang cét sat" },
@@ -2871,7 +3400,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "tools-and-building-supplies", unit: 11,
     unitEn: "Work", unitVi: "Làm Việc",
     topicEn: "Tools and Building Supplies", topicVi: "Đồ Nghề Và Vật Liệu Xây Dựng",
-    bookPages: [150, 151],
+    bookPages: [150, 151], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/Pfeil_Wood_Carving_Tools_and_a_Gloucester_sign_hand_done_by_John_Pydynkowski%2C_%28Gloucester%29_sign_on_workbench_with_tools_23k_gold_leaf_expert_artist_woodcarver.jpg/960px-thumbnail.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Pfeil_Wood_Carving_Tools_and_a_Gloucester_sign_hand_done_by_John_Pydynkowski,_(Gloucester)_sign_on_workbench_with_tools_23k_gold_leaf_expert_artist_woodcarver.jpg",
+      credit: "David Adam Kess", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "blade", vi: "lưỡi cưa" },
       { en: "bolt", vi: "bù loong" },
@@ -2920,7 +3454,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "places-to-go", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Places to Go", topicVi: "Những Nơi Đi Thăm",
-    bookPages: [152, 152],
+    bookPages: [152, 152], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Secretary_Perdue_at_San_Diego_Zoo_%2820190715-OSEC-LSC-1512%29.jpg/960px-Secretary_Perdue_at_San_Diego_Zoo_%2820190715-OSEC-LSC-1512%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Secretary_Perdue_at_San_Diego_Zoo_(20190715-OSEC-LSC-1512).jpg",
+      credit: "USDAgov", license: "Public domain",
+    },
     entries: [
       { en: "amusement park", vi: "g viên giải trí" },
       { en: "announcer", vi: "người giới thiệu chương trình" },
@@ -2952,7 +3491,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "the-park-and-playground", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "The Park and Playground", topicVi: "Công Viên Và Sân Chơi",
-    bookPages: [153, 153],
+    bookPages: [153, 153], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Playground.JPG/960px-Playground.JPG",
+      page: "https://commons.wikimedia.org/wiki/File:Playground.JPG",
+      credit: "Wikimedia Commons", license: "CC0",
+    },
     entries: [
       { en: "ball field", vi: "‘sin chơi bóng sân banh" },
       { en: "bench", vi: "ghế đã" },
@@ -2975,7 +3519,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "sports-verbs", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Sports Verbs", topicVi: "Các Động Từ Trong Thể Thao",
-    bookPages: [156, 157],
+    bookPages: [156, 157], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/2014-11-15_Relay_race_on_the_Sports_day_of_Haikou_Elementary_School_%28Zhunan%29.jpg/960px-2014-11-15_Relay_race_on_the_Sports_day_of_Haikou_Elementary_School_%28Zhunan%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:2014-11-15_Relay_race_on_the_Sports_day_of_Haikou_Elementary_School_(Zhunan).jpg",
+      credit: "曾 成訓", license: "CC BY 2.0",
+    },
     entries: [
       { en: "bend", vi: "cúi xuống" },
       { en: "catch", vi: "bắt" },
@@ -3007,7 +3556,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "team-sports", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Team Sports", topicVi: "Các Môn Thể Thao Đồng Đội",
-    bookPages: [158, 158],
+    bookPages: [158, 158], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/db/Sabers_play_soccer_match_against_local_Binsfeld_Team_%287921270%29.jpg/960px-Sabers_play_soccer_match_against_local_Binsfeld_Team_%287921270%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Sabers_play_soccer_match_against_local_Binsfeld_Team_(7921270).jpg",
+      credit: "U.S. Air Force 52FWPA by Airman 1st Class Albert Morel", license: "Public domain",
+    },
     entries: [
       { en: "baseball", vi: "bóng chày" },
       { en: "basketball", vi: "bóng rổ" },
@@ -3029,7 +3583,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "individual-sports", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Individual Sports", topicVi: "Các Môn Thể Thao Cá Nhân",
-    bookPages: [159, 159],
+    bookPages: [159, 159], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/2012_Warrior_Games_%28Practice_1%29_120423-M-AR635-544.jpg/960px-2012_Warrior_Games_%28Practice_1%29_120423-M-AR635-544.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:2012_Warrior_Games_(Practice_1)_120423-M-AR635-544.jpg",
+      credit: "Lance Cpl. Daniel Wetzel", license: "Public domain",
+    },
     entries: [
       { en: "bowling", vi: "đánh ki" },
       { en: "cycling/biking", vi: "đi xe dap" },
@@ -3047,7 +3606,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "sports-equipment", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Sports Equipment", topicVi: "Dụng Cụ Thể Thao",
-    bookPages: [161, 161],
+    bookPages: [161, 161], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/Alexandros_Katranis%2C_U21_CZE-GRE_2019-10-10_%284%29.jpg/960px-Alexandros_Katranis%2C_U21_CZE-GRE_2019-10-10_%284%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Alexandros_Katranis,_U21_CZE-GRE_2019-10-10_(4).jpg",
+      credit: "Tadeáš Bednarz", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "arrow", vi: "tên" },
       { en: "baseball", vi: "chày (chơi" },
@@ -3069,7 +3633,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "hobbies-and-games", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Hobbies and Games", topicVi: "Các Thú Tiêu Khiển Và Trò Chơi",
-    bookPages: [162, 163],
+    bookPages: [162, 163], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/Board_Game_Myanmar.jpg/960px-Board_Game_Myanmar.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Board_Game_Myanmar.jpg",
+      credit: "Philip Nalangan", license: "CC BY-SA 4.0",
+    },
     entries: [
       { en: "acrylic paint", vi: "sơn acrylic" },
       { en: "action figure", vi: "những nhân" },
@@ -3112,7 +3681,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "electronics-and-photography", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Electronics and Photography", topicVi: "Điện Tử Và Nhiếp Ảnh",
-    bookPages: [164, 165],
+    bookPages: [164, 165], level: "flyers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Attendee_taking_photo_with_Lytro_light_field_camera_%28back%29.jpg/960px-Attendee_taking_photo_with_Lytro_light_field_camera_%28back%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Attendee_taking_photo_with_Lytro_light_field_camera_(back).jpg",
+      credit: "Dcoetzee", license: "CC0",
+    },
     entries: [
       { en: "adapter", vi: "thiết bịtiếp hợp" },
       { en: "cassette recorder", vi: "máy ghi âm cất xét" },
@@ -3137,7 +3711,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "entertainment", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Entertainment", topicVi: "Tiêu Khiển Giải Trí",
-    bookPages: [166, 167],
+    bookPages: [166, 167], level: "movers",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/061217-N-0336C-052_Sailors_watch_the_Christmas_film_%22Elf%22.jpg/960px-061217-N-0336C-052_Sailors_watch_the_Christmas_film_%22Elf%22.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:061217-N-0336C-052_Sailors_watch_the_Christmas_film_%22Elf%22.jpg",
+      credit: "U.S. Navy photo by Mass Communication Specialist 2nd Class Arturo Chavez", license: "Public domain",
+    },
     entries: [
       { en: "action story/ adventure story", vi: "một truyện phiêu lưu mạo hiểm" },
       { en: "ballet", vi: "vũ ba-lê" },
@@ -3161,7 +3740,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "holidays", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "Holidays", topicVi: "Các Ngày Lễ",
-    bookPages: [168, 168],
+    bookPages: [168, 168], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/MKAB_Christmas_Tree_Lighting_Brings_Holiday_Cheer_to_Soldiers_in_Romania_%288784683%29.jpg/960px-MKAB_Christmas_Tree_Lighting_Brings_Holiday_Cheer_to_Soldiers_in_Romania_%288784683%29.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:MKAB_Christmas_Tree_Lighting_Brings_Holiday_Cheer_to_Soldiers_in_Romania_(8784683).jpg",
+      credit: "U.S. Army 105MPAD by Pfc. Carlos Marquez", license: "Public domain",
+    },
     entries: [
       { en: "candy", vi: "kẹo" },
       { en: "card", vi: "thiệp" },
@@ -3184,7 +3768,12 @@ export const oxfordBookTopics: OxfordBookTopic[] = [
     slug: "a-party", unit: 12,
     unitEn: "Recreation", unitVi: "Giải Trí",
     topicEn: "A Party", topicVi: "Tiệc Liên Hoan",
-    bookPages: [169, 169],
+    bookPages: [169, 169], level: "starters",
+    image: {
+      src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Birthday_party.jpg/960px-Birthday_party.jpg",
+      page: "https://commons.wikimedia.org/wiki/File:Birthday_party.jpg",
+      credit: "suyash (talk).\n\nThe original uploader was A suyash at English Wikipedia.", license: "Public domain",
+    },
     entries: [
       { en: "blow out the candles", vi: "thổi tất nd" },
       { en: "plan a party E", vi: "Tổ chức một buổi lên hoan giấ" },
