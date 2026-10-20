@@ -19,10 +19,18 @@ export interface OwlyProviderMeta {
 
 export const OWLY_PROVIDERS: OwlyProviderMeta[] = [
   {
+    id: "larprouter",
+    name: "LarpRouter",
+    keyUrl: "https://larprouter.com/api-keys",
+    defaultModel: "deepseek-v4.1-flash",
+    description: "Cổng router AI — model DeepSeek V4.1 Flash miễn phí, nhanh.",
+    openAiCompatible: true,
+  },
+  {
     id: "groq",
     name: "Groq",
     keyUrl: "https://console.groq.com/keys",
-    defaultModel: "llama-3.3-70b-versatile",
+    defaultModel: "openai/gpt-oss-20b",
     description: "Miễn phí, trả lời siêu nhanh — lựa chọn tốt nhất cho bé.",
     openAiCompatible: true,
   },
@@ -74,12 +82,13 @@ export const OWLY_PROVIDERS: OwlyProviderMeta[] = [
  */
 export function detectOwlyProvider(apiKey: string): OwlyProviderMeta {
   const k = apiKey.trim();
-  if (k.startsWith("gsk_")) return OWLY_PROVIDERS[0]!;
-  if (k.startsWith("sk-or-")) return OWLY_PROVIDERS[2]!;
-  if (k.startsWith("sk-ant-")) return OWLY_PROVIDERS[4]!;
-  if (k.startsWith("AIza")) return OWLY_PROVIDERS[1]!;
-  if (k.startsWith("sk-")) return OWLY_PROVIDERS[3]!;
-  return OWLY_PROVIDERS[5]!;
+  if (k.startsWith("lrsk_")) return OWLY_PROVIDERS[0]!;
+  if (k.startsWith("gsk_")) return OWLY_PROVIDERS[1]!;
+  if (k.startsWith("sk-or-")) return OWLY_PROVIDERS[3]!;
+  if (k.startsWith("sk-ant-")) return OWLY_PROVIDERS[5]!;
+  if (k.startsWith("AIza")) return OWLY_PROVIDERS[2]!;
+  if (k.startsWith("sk-")) return OWLY_PROVIDERS[4]!;
+  return OWLY_PROVIDERS[6]!;
 }
 
 export function getOwlyProviderMeta(id: string): OwlyProviderMeta | undefined {

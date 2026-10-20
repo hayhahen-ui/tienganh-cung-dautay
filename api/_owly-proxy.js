@@ -52,6 +52,15 @@ const PROVIDERS = [
     openAiCompatible: true,
   },
   {
+    id: "larprouter",
+    test: (k) => k.startsWith("lrsk_"),
+    base: "https://larprouter.com/v1",
+    model: "deepseek-v4.1-flash",
+    fallbackModel: "glm-5.3-flash",
+    name: "larprouter",
+    openAiCompatible: true,
+  },
+  {
     id: "dashscope",
     test: () => true,
     base: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",

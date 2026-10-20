@@ -198,3 +198,18 @@ API kẹt theo.
 - `render.yaml`: VITE_OWLY_API_URL trỏ sang worker (đổi URL thật sau khi user deploy).
 **Sau khi user deploy worker:** đổi VITE_OWLY_API_URL trong Render dashboard →
 Environment → rebuild. Vercel giữ nguyên trong repo nhưng không còn dùng.
+
+## I. Đấu nối LarpRouter — model DeepSeek V4.1 Flash free (20/10/2026)
+**Yêu cầu:** user tạo key LarpRouter (`lrsk_…`), muốn dùng model `deepseek-v4.1-flash`
+(free tier) trong app.
+**Triển khai:**
+- `api/_owly-proxy.js`: thêm provider `larprouter` (test `lrsk_`, base
+  `https://larprouter.com/v1`, model `deepseek-v4.1-flash`, fallback `glm-5.3-flash`)
+  đặt TRƯỚC catch-all dashscope. OpenAI-compatible, auth Bearer.
+- `src/lib/rag/owlyProviders.ts`: thêm meta LarpRouter (đứng đầu danh sách gợi ý),
+  sửa `detectOwlyProvider` (cập nhật toàn bộ index), sửa defaultModel Groq cũ
+  `llama-3.3-70b-versatile` → `openai/gpt-oss-20b`.
+- `src/components/AiKeySettings.tsx`: thêm larprouter vào mục "Lấy key miễn phí ở đâu?".
+**Test:** Node — resolveConfig `lrsk_` → đúng base/model; gọi thật validate/chat với
+key giả → LarpRouter trả 401 (đúng endpoint + auth format). detectOwlyProvider đúng
+cả 7 loại key. TSC/lint/build pass.

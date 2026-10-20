@@ -189,21 +189,21 @@ export function AiKeySettings({
           <div className="rounded-xl bg-muted p-3">
             <p className="mb-2 font-bold">🆓 Lấy key miễn phí ở đâu?</p>
             <ul className="space-y-1.5">
-              {OWLY_PROVIDERS.filter((p) => ["groq", "gemini", "openrouter"].includes(p.id)).map(
-                (p) => (
-                  <li key={p.id}>
-                    <a
-                      href={p.keyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
-                    >
-                      {p.name} <ExternalLink className="size-3" />
-                    </a>
-                    <span className="text-muted-foreground"> — {p.description}</span>
-                  </li>
-                ),
-              )}
+              {OWLY_PROVIDERS.filter((p) =>
+                ["larprouter", "groq", "gemini", "openrouter"].includes(p.id),
+              ).map((p) => (
+                <li key={p.id}>
+                  <a
+                    href={p.keyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                  >
+                    {p.name} <ExternalLink className="size-3" />
+                  </a>
+                  <span className="text-muted-foreground"> — {p.description}</span>
+                </li>
+              ))}
             </ul>
           </div>
 
