@@ -23,6 +23,7 @@ import {
   type Lesson,
 } from "@/data/curriculum";
 import { oxfordPictureTopics, OXFORD_LEVEL_META } from "@/data/oxfordPicture";
+import { oxfordBookTopics } from "@/data/oxfordBook";
 
 export type ChunkSource = {
   type:
@@ -285,6 +286,20 @@ function metaChunks(): Chunk[] {
       keywords: `${t.title} ${t.titleVi} ${lv.name} oxford picture dictionary từ vựng tranh chủ đề topic ${t.unit}`,
       source: { type: "vocab" as const, label: `🖼️ ${t.title}` },
       level: t.level,
+    });
+  });
+
+  // Từ vựng gốc từ sách The Oxford Picture Dictionary (Anh–Việt) — file người dùng cung cấp,
+  // trích xuất OCR theo chủ đề, có trích dẫn số trang sách để đối chiếu.
+  oxfordBookTopics.forEach((t) => {
+    const pages = t.bookPages[0] === t.bookPages[1] ? `${t.bookPages[0]}` : `${t.bookPages[0]}-${t.bookPages[1]}`;
+    const pairs = t.entries.map((e) => `${e.en} = ${e.vi}`).join("; ");
+    const allWords = t.entries.map((e) => `${e.en} ${e.vi}`).join(" ");
+    chunks.push({
+      id: `oxford-book-${t.slug}`,
+      text: `Từ điển tranh Oxford (sách The Oxford Picture Dictionary, Anh–Việt), Unit ${t.unit} "${t.unitEn}" (${t.unitVi}), chủ đề "${t.topicEn}" (${t.topicVi}), trang ${pages}: ${pairs}.`,
+      keywords: `${t.topicEn} ${t.topicVi} ${allWords} oxford picture dictionary sách oxford từ điển tranh trang ${pages}`,
+      source: { type: "vocab" as const, label: `📖 ${t.topicEn} (Oxford tr.${pages})` },
     });
   });
 

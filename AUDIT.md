@@ -364,3 +364,35 @@ thông. **Bài học:** KHÔNG chép ref/host từ ảnh chụp màn hình — l
 URL trong code đang chạy production hoặc copy trực tiếp từ trang Settings →
 Project URL; khi gặp ENOTFOUND, tra DNS-over-HTTPS để phân biệt "host không
 tồn tại" với "mạng bị chặn".
+
+## §R — Đấu nối sách gốc Oxford Picture Dictionary (20/10/2026)
+
+**Nguồn:** user cung cấp file `PICTURE_OXFORD.pdf` qua Google Drive (47,5MB,
+238 trang, bản scan Image2PDF 2009, KHÔNG có lớp chữ). Sách: *The Oxford
+Picture Dictionary*, bản Anh–Việt (Shapiro & Adelson-Goldstein, Oxford
+University Press) — 12 units, 128 chủ đề, 3.700+ từ; PDF page = book page + 10.
+
+**Phương pháp:** render đúng độ phân giải gốc 200 DPI (bản scan 200ppi —
+render 300 DPI chỉ tốn gấp đôi thời gian, không thêm thông tin) → OCR
+Tesseract 5.3.4 `eng+vie`, xuất cả bản chữ (txt) và bản tọa độ (TSV). Hai
+parser độc lập (v1 theo dòng, v2 theo từ/ô tọa độ) → hợp nhất, ưu tiên v2,
+lọc rác (EN chứa neo thứ hai/dấu Việt, VI dính đuôi). Khung chủ đề lấy từ
+Mục lục sách (trang sách + tiêu đề Anh–Việt chuẩn). Chỉ trích DỮ LIỆU TỪ
+VỰNG (cặp Anh–Việt + chủ đề + số trang) — không sao chép hình minh hoạ hay
+văn bản dài của sách. Script nằm ở `research/oxford-source/` (PDF/ảnh/OCR
+KHÔNG đưa lên Git — chỉ giữ ở máy).
+
+**Kết quả:** `src/data/oxfordBook.ts` — **2.245 cặp Anh–Việt, 116/128 chủ
+đề**. 12 chủ đề trống đều là trang bản đồ/tranh toàn cảnh (A Classroom,
+Geography, The World, The Universe, The Beach...) — chữ in đè lên tranh
+nên OCR không tách cặp tin cậy được; thà thiếu còn hơn sai nghĩa cho trẻ.
+~1% mục còn lỗi gộp nhẹ của OCR (vd đuôi nghĩa dính từ mục kề). Trang Verb
+Guide (170–172) là bảng tham khảo, không phải từ vựng chủ đề — không đưa vào.
+
+**Đấu nối:** `knowledge.ts` thêm 116 chunk `oxford-book-<slug>` (nội dung
+"en = vi", keywords chứa mọi từ Anh + Việt, nhãn nguồn có số trang sách).
+Kiểm chứng: `tsc` sạch, `npm run build` OK; test truy xuất (esbuild +
+retriever thật): "crosswalk nghĩa là gì" → chunk sách #1, "detergent là gì"
+→ #1, "hoa trạng nguyên tiếng Anh là gì" → #1, "poinsettia tiếng Việt là
+gì" → #4 (vẫn trong cửa sổ top-5 mà AskOwly dùng; các chunk FAQ chung
+chiếm hạng đầu vì khớp token "tiếng việt").
