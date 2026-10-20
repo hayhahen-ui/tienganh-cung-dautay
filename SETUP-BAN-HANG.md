@@ -66,3 +66,14 @@
 - Mọi thao tác nguy hiểm (tạo/xóa/đổi mật khẩu user khác) chạy qua `api/admin-users.js`
   bằng `service_role` ở phía server — frontend không bao giờ chạm vào key này.
 - Nếu chưa cấu hình Supabase, app chạy mở như cũ + banner cảnh báo (để không "chết" khi build thiếu env).
+
+## Đường vòng Render cho Admin API (tạm thời, từ 20/10/2026)
+Vercel free chạm trần 100 deploys/ngày → `/api/admin-users` chưa deploy được lên
+Vercel. Giải pháp tạm: `server/admin-server.js` (Node thuần) bọc đúng handler đó,
+chạy như một **Web Service riêng trên Render** tên `owly-admin-api`:
+- Build Command: `npm install` · Start Command: `node server/admin-server.js`
+- Env (giống Vercel): `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OWLY_SETUP_TOKEN`
+- Frontend trỏ sang nhờ biến `VITE_OWLY_ADMIN_URL` (ưu tiên hơn `VITE_OWLY_API_URL`;
+  chỉ các call admin/setup dùng biến này — Hỏi cô Owly vẫn qua Vercel).
+- Khi Vercel hết bị giới hạn deploy: chỉ cần XÓA `VITE_OWLY_ADMIN_URL` khỏi static
+  site + redeploy Vercel là quay về kiến trúc gốc, có thể xóa service Render này.

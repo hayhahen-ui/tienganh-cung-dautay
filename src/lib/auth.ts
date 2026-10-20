@@ -176,10 +176,12 @@ export async function updateMyKidName(
   return { ok: true };
 }
 
-// ── Gọi Admin API (Vercel function, dùng service_role ở phía server) ─────────
-
-const API_BASE = (
-  (import.meta.env as Record<string, string | undefined>)["VITE_OWLY_API_URL"] || ""
+// ── Gọi Admin API (server dùng service_role ở phía server) ───────────────
+// Ưu tiên VITE_OWLY_ADMIN_URL (đường vòng Render) rồi mới VITE_OWLY_API_URL.
+const ADMIN_BASE = (
+  (import.meta.env as Record<string, string | undefined>)["VITE_OWLY_ADMIN_URL"] ||
+  (import.meta.env as Record<string, string | undefined>)["VITE_OWLY_API_URL"] ||
+  ""
 ).replace(/\/$/, "");
 
 /** Gọi API public (không JWT) — chỉ dùng cho status/bootstrap của /setup. */
@@ -188,7 +190,7 @@ export async function publicApi(
   body: Record<string, unknown> = {},
 ): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; error: string }> {
   try {
-    const res = await fetch(`${API_BASE}/api/admin-users`, {
+    const res = await fetch(`${ADMIN_BASE}/api/admin-users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, ...body }),
@@ -220,7 +222,7 @@ export async function adminApi(
   const token = sess.session?.access_token;
   if (!token) return { ok: false, error: "Chưa đăng nhập." };
   try {
-    const res = await fetch(`${API_BASE}/api/admin-users`, {
+    const res = await fetch(`${ADMIN_BASE}/api/admin-users`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
