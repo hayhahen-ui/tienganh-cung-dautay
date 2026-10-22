@@ -431,3 +431,47 @@ chủ đề có ảnh bìa + huy hiệu cấp + ghi nguồn ảnh; kết quả t
 huy hiệu cấp. Kiểm chứng: tsc sạch, build OK, retriever test — "crosswalk"
 → chunk sách #1 (level movers), "từ vựng starters về gia đình" → chunk
 Family #2 (level starters).
+
+## §T — Đấu nối Novita AI: chat + giọng đọc AI nam/nữ (22/10/2026)
+
+**Yêu cầu của user:** key Novita dùng cho dịch/tra cứu và QUAN TRỌNG NHẤT là
+giọng đọc chuẩn rõ — trên điện thoại giọng máy chỉ có 1 giọng nữ, không có
+giọng nam, khó nghe. Kèm file zip Voice-Pro (ABUS) tổng hợp các engine/giọng
+TTS để audit + kaizen.
+
+**Audit Voice-Pro (zip 17,8MB):** app Gradio đa engine (Edge-TTS, Azure,
+Kokoro, CosyVoice, F5-TTS, RVC) — không nhúng được vào web app, nhưng BỘ
+SƯU TẬP GIỌNG của nó là tài sản dùng lại được: `abus_voice_ms.py` liệt kê
+giọng MS theo tên + giới tính (en-US 8 nữ/9 nam..., vi-VN HoaiMy nữ /
+NamMinh nam), `abus_voice_kokoro.py` tương tự cho Kokoro. Kaizen áp dụng:
+danh mục giọng của Owly nay cũng theo chuẩn "tên nhân vật + giới tính +
+phong cách" để bé/ba mẹ chọn (xem ttsCloud.ts).
+
+**Kiểm chứng Novita bằng key thật (không lưu key vào code/repo):**
+- `GET /openai/v1/models` + `/v3/openai/models` → 200, 96 model (key HỢP LỆ).
+- TTS đúng endpoint tài liệu chính thức Novita: `POST /v3/minimax-speech-02-hd`
+  (MiniMax Speech-02-HD, đồng bộ, trả hex mp3; 17 giọng hệ thống có cả nam/nữ).
+- CẢ TTS lẫn chat đều trả `403 NOT_ENOUGH_BALANCE` — tài khoản $0.0000
+  (khớp ảnh console user gửi). Code hoàn thiện sẵn; user nạp credit là chạy.
+
+**Đã đấu nối:**
+- Proxy chat: provider `novita` (key `sk_` gạch dưới — phân biệt OpenAI
+  `sk-`; đặt trước openai), base `api.novita.ai/openai/v1`, model
+  deepseek-v4.1-flash-1017 + fallback glm-5.3-flash. Nhận diện FE khớp 7/7 ca test.
+- `api/tts.js` + `api/_tts-core.js` (+ route dev trong vite.config): POST
+  {text≤600, voiceId (whitelist 17 giọng), speed, lang en/vi} → audio/mpeg
+  32kHz; lỗi balance → HTTP 402 reason "balance". Unit test handler 3/3
+  (key sai 400, hết tiền 402, thành công 200 đúng bytes).
+- FE: `src/lib/ttsCloud.ts` — 8 giọng tuyển (4 nữ: Cô Emily/Lily/Anna/Mary;
+  4 nam: Thầy Ben/Jack/Tom/David), cache blob 30 mục (đỡ tốn credit), tự
+  nhận diện câu tiếng Việt → language_boost Vietnamese, trạng thái TTS
+  (balance/auth/ok) cho UI. `speech.ts`: speak() ưu tiên giọng AI, lỗi thì
+  rơi về giọng máy; karaoke (onBoundary) giữ giọng máy để highlight chuẩn;
+  stopSpeaking dừng cả 2 tầng. `VoiceSettings`: chips chọn từng giọng +
+  badge "☁️ Giọng AI" + cảnh báo hết credit; AiKeySettings thêm Novita
+  (ghi rõ cần credit, đổi tiêu đề mục key cho trung thực).
+
+**Chờ user:** nạp credit Novita (Billing) → dán key vào ⚙️ Hỏi cô Owly →
+vào trang Bài học chọn giọng Cô/Thầy và Nghe thử. Key đã lộ qua chat —
+khuyến nghị tạo key mới sau khi nạp tiền (key cũ chỉ để test, không nằm
+trong repo).

@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import { resolveConfig, callChat, validateKey, checkRateLimit } from "./api/_owly-proxy.js";
+import { callNovitaTts, isNovitaKey } from "./api/_tts-core.js";
 
 /**
  * Vite plugin: proxy /api/ask-owly → LLM provider (dev).
@@ -23,6 +24,53 @@ function llmProxyPlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url ?? "";
+        if (url.includes("/api/tts")) {
+          // Dev mirror của api/tts.js (giọng AI Novita).
+          if (req.method !== "POST") {
+            res.statusCode = 405;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: "Method not allowed" }));
+            return;
+          }
+          try {
+            const chunks: Buffer[] = [];
+            for await (const chunk of req) chunks.push(chunk as Buffer);
+            const body = JSON.parse(Buffer.concat(chunks).toString());
+            if (!isNovitaKey(body.apiKey)) {
+              res.statusCode = 400;
+              res.setHeader("Content-Type", "application/json");
+              res.end(
+                JSON.stringify({ error: "Giọng AI cần key Novita (sk_...).", reason: "bad-request" }),
+              );
+              return;
+            }
+            const r = await callNovitaTts(String(body.apiKey).trim(), {
+              text: String(body.text || ""),
+              voiceId: body.voiceId,
+              speed: body.speed,
+              lang: body.lang === "vi" ? "vi" : "en",
+            });
+            if (!r.ok) {
+              res.statusCode = r.reason === "balance" ? 402 : r.reason === "auth" ? 401 : 502;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ error: r.error, reason: r.reason }));
+              return;
+            }
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "audio/mpeg");
+            res.end(r.audio);
+          } catch (err) {
+            res.statusCode = 500;
+            res.setHeader("Content-Type", "application/json");
+            res.end(
+              JSON.stringify({
+                error: err instanceof Error ? err.message : "TTS error",
+                reason: "error",
+              }),
+            );
+          }
+          return;
+        }
         if (!url.includes("/api/ask-owly")) {
           return next();
         }

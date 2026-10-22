@@ -44,6 +44,18 @@ const PROVIDERS = [
     openAiCompatible: true,
   },
   {
+    // Novita: key dạng "sk_" (gạch dưới) — phân biệt với OpenAI "sk-" (gạch ngang).
+    // PHẢI đứng trước openai trong danh sách. Novita dùng cho cả chat
+    // (dịch/tra cứu) lẫn giọng đọc AI qua api/tts.js (MiniMax Speech HD).
+    id: "novita",
+    test: (k) => k.startsWith("sk_"),
+    base: "https://api.novita.ai/openai/v1",
+    model: "deepseek/deepseek-v4.1-flash-1017",
+    fallbackModel: "zai-org/glm-5.3-flash",
+    name: "novita",
+    openAiCompatible: true,
+  },
+  {
     id: "openai",
     test: (k) => k.startsWith("sk-"),
     base: "https://api.openai.com/v1",

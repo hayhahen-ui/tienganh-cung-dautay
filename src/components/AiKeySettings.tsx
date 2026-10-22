@@ -187,10 +187,10 @@ export function AiKeySettings({
 
           {/* Key miễn phí */}
           <div className="rounded-xl bg-muted p-3">
-            <p className="mb-2 font-bold">🆓 Lấy key miễn phí ở đâu?</p>
+            <p className="mb-2 font-bold">🔑 Lấy key ở đâu? (hầu hết miễn phí)</p>
             <ul className="space-y-1.5">
               {OWLY_PROVIDERS.filter((p) =>
-                ["larprouter", "groq", "gemini", "openrouter"].includes(p.id),
+                ["larprouter", "groq", "gemini", "openrouter", "novita"].includes(p.id),
               ).map((p) => (
                 <li key={p.id}>
                   <a

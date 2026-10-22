@@ -1,9 +1,21 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Owly English — Speech engine
-// Text-to-Speech dùng Web Speech API với 2 giọng bản địa: Nữ / Nam (người lớn),
-// tốc độ "Chậm" (mặc định cho trẻ em) hoặc "Vừa". Lựa chọn được lưu lại
-// trong localStorage và dùng chung cho toàn bộ nút loa trong app.
+// Hai tầng giọng đọc:
+//  1. Giọng AI Novita (MiniMax Speech HD) — khi ba mẹ dán key Novita:
+//     giọng NAM/NỮ thật, mp3 HD rõ nét trên mọi thiết bị, bé chọn được
+//     từng giọng Cô/Thầy cụ thể (xem lib/ttsCloud.ts). Đường mặc định.
+//  2. Giọng máy (Web Speech API) — dự phòng khi không có key Novita hoặc
+//     giọng AI lỗi; và là đường DUY NHẤT cho đọc karaoke (cần sự kiện
+//     boundary để highlight từng từ — file mp3 không có thông tin này).
+// Lựa chọn lưu trong localStorage, dùng chung cho mọi nút loa trong app.
 // ─────────────────────────────────────────────────────────────────────────────
+import {
+  defaultNovitaVoice,
+  hasNovitaKey,
+  novitaVoiceById,
+  speakCloud,
+  stopCloudSpeech,
+} from "./ttsCloud";
 
 export type VoiceGender = "female" | "male";
 export type SpeechSpeed = "slow" | "normal";
@@ -11,6 +23,8 @@ export type SpeechSpeed = "slow" | "normal";
 export type VoiceSettings = {
   gender: VoiceGender;
   speed: SpeechSpeed;
+  /** Giọng AI cụ thể (voice_id của Novita) — undefined = tự chọn theo gender. */
+  voiceId?: string | undefined;
 };
 
 const SETTINGS_KEY = "owly-voice-settings";
@@ -28,6 +42,7 @@ export function getVoiceSettings(): VoiceSettings {
     return {
       gender: parsed.gender === "male" ? "male" : "female",
       speed: parsed.speed === "normal" ? "normal" : "slow",
+      voiceId: typeof parsed.voiceId === "string" ? parsed.voiceId : undefined,
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -203,27 +218,35 @@ function ensureVoicesLoaded() {
   };
 }
 
-/**
- * Đọc văn bản bằng giọng bản địa theo cài đặt toàn cục.
- * - `slow = true`  → ép nghe chậm (0.6×) bất kể cài đặt (dùng cho nút "Nghe chậm").
- * - Tốc độ theo cài đặt: Chậm = 0.7× · Vừa = 0.9× (chuẩn người bản địa nói với trẻ).
- * - Pitch: nữ 1.05 / nam 0.95 → giọng người lớn tự nhiên, không bị méo.
- */
-export function speak(
+/** Giọng AI đang dùng theo cài đặt: voiceId cụ thể, hoặc mặc định theo gender. */
+function activeCloudVoice(settings: VoiceSettings) {
+  const picked = settings.voiceId ? novitaVoiceById(settings.voiceId) : undefined;
+  return picked ?? defaultNovitaVoice(settings.gender);
+}
+
+/** Ánh xạ tốc độ của giọng máy (0.6–0.9) sang thang MiniMax (0.5–2.0). */
+function cloudSpeed(
+  settings: VoiceSettings,
+  opts: { slow?: boolean | undefined; rate?: number | undefined },
+): number {
+  if (typeof opts.rate === "number") return Math.min(1.2, Math.max(0.6, opts.rate + 0.15));
+  if (opts.slow) return 0.75;
+  return settings.speed === "slow" ? 0.85 : 1.0;
+}
+
+/** Đọc bằng giọng MÁY (Web Speech) — logic gốc, giữ nguyên hành vi. */
+function speakDevice(
   text: string,
   opts: {
     slow?: boolean | undefined;
     rate?: number | undefined;
-    /** Gọi khi bắt đầu đọc 1 từ (charIndex trong text) — dùng highlight karaoke. */
     onBoundary?: ((charIndex: number) => void) | undefined;
-    /** Gọi khi đọc xong hoặc bị lỗi/hủy — dùng reset UI. */
     onEnd?: (() => void) | undefined;
-  } = {},
-) {
+  },
+  settings: VoiceSettings,
+): boolean {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return false;
   ensureVoicesLoaded();
-
-  const settings = getVoiceSettings();
 
   const baseRate = settings.speed === "slow" ? 0.7 : 0.9;
   const rate = typeof opts.rate === "number" ? opts.rate : opts.slow ? 0.6 : baseRate;
@@ -252,32 +275,70 @@ export function speak(
   return true;
 }
 
-/** Dừng mọi phát âm đang chạy (nút Dừng). */
+/**
+ * Đọc văn bản theo cài đặt toàn cục — giọng AI Novita là đường mặc định
+ * (khi có key Novita), giọng máy là dự phòng.
+ * - Có `onBoundary` (karaoke highlight từng từ) → luôn dùng giọng máy.
+ * - `slow = true` → ép chậm (nút "Nghe chậm"); tốc độ cài đặt: Chậm/Vừa.
+ */
+export function speak(
+  text: string,
+  opts: {
+    slow?: boolean | undefined;
+    rate?: number | undefined;
+    /** Gọi khi bắt đầu đọc 1 từ (charIndex trong text) — dùng highlight karaoke. */
+    onBoundary?: ((charIndex: number) => void) | undefined;
+    /** Gọi khi đọc xong hoặc bị lỗi/hủy — dùng reset UI. */
+    onEnd?: (() => void) | undefined;
+  } = {},
+) {
+  if (typeof window === "undefined") return false;
+  const settings = getVoiceSettings();
+  stopCloudSpeech();
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+
+  if (!opts.onBoundary && hasNovitaKey()) {
+    const voice = activeCloudVoice(settings);
+    void speakCloud(text, {
+      voiceId: voice.id,
+      speed: cloudSpeed(settings, opts),
+      onEnd: opts.onEnd,
+    }).then((ok) => {
+      if (!ok) speakDevice(text, opts, settings); // AI lỗi → rơi về giọng máy
+    });
+    return true;
+  }
+  return speakDevice(text, opts, settings);
+}
+
+/** Dừng mọi phát âm đang chạy (cả giọng AI lẫn giọng máy). */
 export function stopSpeaking() {
+  stopCloudSpeech();
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
 }
 
-/** Nghe thử câu mẫu với cài đặt hiện tại (dùng trong bảng chọn giọng). */
-export function previewVoice(gender: VoiceGender, speed: SpeechSpeed) {
+/** Nghe thử giọng: ưu tiên đúng giọng AI sẽ dùng, không có key Novita thì giọng máy. */
+export function previewVoice(gender: VoiceGender, speed: SpeechSpeed, voiceId?: string) {
+  const settings = getVoiceSettings();
+  const voice = voiceId ? novitaVoiceById(voiceId) : undefined;
+  const persona = voice?.persona ?? defaultNovitaVoice(gender).persona;
+  const firstName = persona.replace(/^(Cô|Thầy)\s+/, "");
   const sample =
     gender === "female"
-      ? "Hello! I am Miss Emily. Let's learn English together!"
-      : "Hello! I am Mister Daniel. Are you ready to learn English?";
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  ensureVoicesLoaded();
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(sample);
-  u.rate = speed === "slow" ? 0.7 : 0.9;
-  u.pitch = gender === "male" ? 0.95 : 1.05;
-  const voice = getEnglishVoices(gender)[0];
-  if (voice) {
-    u.voice = voice;
-    u.lang = voice.lang;
-  } else {
-    u.lang = "en-GB";
+      ? `Hello! I am Miss ${firstName}. Let's learn English together!`
+      : `Hello! I am Mister ${firstName}. Are you ready to learn English?`;
+  stopSpeaking();
+  if (hasNovitaKey()) {
+    void speakCloud(sample, {
+      voiceId: voice?.id ?? defaultNovitaVoice(gender).id,
+      speed: speed === "slow" ? 0.85 : 1.0,
+    }).then((ok) => {
+      if (!ok) speakDevice(sample, {}, { gender, speed });
+    });
+    return;
   }
-  window.speechSynthesis.speak(u);
+  speakDevice(sample, {}, { ...settings, gender, speed });
 }
 
 export function normalize(s: string) {

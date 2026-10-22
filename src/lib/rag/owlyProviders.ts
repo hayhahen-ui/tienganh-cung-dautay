@@ -74,6 +74,15 @@ export const OWLY_PROVIDERS: OwlyProviderMeta[] = [
     description: "Mặc định của app khi không nhận diện được key.",
     openAiCompatible: true,
   },
+  {
+    id: "novita",
+    name: "Novita AI",
+    keyUrl: "https://novita.ai/settings/key-management",
+    defaultModel: "deepseek/deepseek-v4.1-flash-1017",
+    description:
+      "Một key cho cả chat AI (dịch, tra cứu) VÀ giọng đọc AI MiniMax HD — có giọng nam/nữ thật, rõ nét trên điện thoại. Cần có credit trong tài khoản.",
+    openAiCompatible: true,
+  },
 ];
 
 /**
@@ -87,6 +96,8 @@ export function detectOwlyProvider(apiKey: string): OwlyProviderMeta {
   if (k.startsWith("sk-or-")) return OWLY_PROVIDERS[3]!;
   if (k.startsWith("sk-ant-")) return OWLY_PROVIDERS[5]!;
   if (k.startsWith("AIza")) return OWLY_PROVIDERS[2]!;
+  // Novita: "sk_" (gạch dưới) — phải xét TRƯỚC OpenAI "sk-" (gạch ngang).
+  if (k.startsWith("sk_")) return OWLY_PROVIDERS.find((p) => p.id === "novita")!;
   if (k.startsWith("sk-")) return OWLY_PROVIDERS[4]!;
   return OWLY_PROVIDERS[6]!;
 }
