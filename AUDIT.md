@@ -475,3 +475,13 @@ phong cách" để bé/ba mẹ chọn (xem ttsCloud.ts).
 vào trang Bài học chọn giọng Cô/Thầy và Nghe thử. Key đã lộ qua chat —
 khuyến nghị tạo key mới sau khi nạp tiền (key cũ chỉ để test, không nằm
 trong repo).
+
+**Bổ sung §T (22/10, sau phản hồi của user):** user mở trang Hỏi cô Owly —
+nơi chỉ có thanh giọng dạng compact — và không thấy chỗ chọn giọng (bảng
+chọn giọng ban đầu chỉ nằm ở trang Bài học). Kaizen: thanh compact có thêm
+nút "🎙️ Chọn giọng" mở bảng chọn giọng ngay tại chỗ (mọi trang), bản đầy
+ đủ giữ nguyên. Lưu ý vận hành rút ra từ ảnh user gửi: dialog key ở bản
+frontend CŨ nhận diện key Novita thành "DashScope" (chưa có nhánh sk_) —
+bản mới đã đúng; validate chỉ gọi /models (miễn phí) nên báo "kết nối
+thành công" dù tài khoản $0 — TTS thật vẫn cần credit, UI đã có cảnh báo
+riêng khi bấm nghe.

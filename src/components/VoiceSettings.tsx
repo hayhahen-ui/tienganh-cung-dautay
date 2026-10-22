@@ -39,6 +39,7 @@ export function VoiceSettings({ compact = false }: { compact?: boolean }) {
   const [settings, setSettings] = useState<VoiceSettingsState>(() => getVoiceSettings());
   const [novita, setNovita] = useState<boolean>(() => hasNovitaKey());
   const [ttsStatus, setTtsStatus] = useState(() => getTtsStatus());
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => onVoiceSettingsChange(() => setSettings(getVoiceSettings())), []);
   useEffect(() => onTtsStatusChange(() => setTtsStatus(getTtsStatus())), []);
@@ -113,9 +114,24 @@ export function VoiceSettings({ compact = false }: { compact?: boolean }) {
             ☁️ Giọng AI
           </span>
         )}
+        {novita && compact && (
+          <button
+            type="button"
+            onClick={() => setPickerOpen((o) => !o)}
+            aria-expanded={pickerOpen}
+            className={cn(
+              "rounded-full border-2 px-3 py-1 text-xs font-bold transition-colors",
+              pickerOpen
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card hover:bg-muted",
+            )}
+          >
+            🎙️ Chọn giọng {pickerOpen ? "▴" : "▾"}
+          </button>
+        )}
       </div>
 
-      {!compact && novita && (
+      {(!compact || pickerOpen) && novita && (
         <div className="rounded-2xl border-2 border-border bg-card p-3">
           <p className="text-xs font-bold text-muted-foreground">
             🎙️ Chọn giọng AI (Novita — rõ nét trên điện thoại, có cả giọng nam):
