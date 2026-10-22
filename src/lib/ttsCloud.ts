@@ -19,27 +19,30 @@ import { detectOwlyProvider } from "./rag/owlyProviders";
 import type { VoiceGender } from "./speech";
 
 export interface NovitaVoice {
+  /** voice_id của Novita (MiniMax) */
   id: string;
+  /** voiceName của Gemini TTS cho cùng nhân vật */
+  geminiId: string;
   /** Tên nhân vật hiển thị cho bé/ba mẹ */
   persona: string;
   gender: VoiceGender;
   style: string;
 }
 
-/** Giọng nữ — mặc định Lovely_Girl (Cô Emily, giọng trẻ ngọt cho bé). */
+/** Giọng nữ — mặc định Cô Emily, giọng trẻ ngọt cho bé. */
 export const NOVITA_VOICES_FEMALE: NovitaVoice[] = [
-  { id: "Lovely_Girl", persona: "Cô Emily", gender: "female", style: "giọng trẻ, ngọt ngào" },
-  { id: "Lively_Girl", persona: "Cô Lily", gender: "female", style: "vui tươi, năng động" },
-  { id: "Calm_Woman", persona: "Cô Anna", gender: "female", style: "dịu dàng, chậm rãi" },
-  { id: "Wise_Woman", persona: "Cô Mary", gender: "female", style: "ấm áp, rõ ràng" },
+  { id: "Lovely_Girl", geminiId: "Zephyr", persona: "Cô Emily", gender: "female", style: "giọng trẻ, ngọt ngào" },
+  { id: "Lively_Girl", geminiId: "Aoede", persona: "Cô Lily", gender: "female", style: "vui tươi, năng động" },
+  { id: "Calm_Woman", geminiId: "Kore", persona: "Cô Anna", gender: "female", style: "dịu dàng, chậm rãi" },
+  { id: "Wise_Woman", geminiId: "Leda", persona: "Cô Mary", gender: "female", style: "ấm áp, rõ ràng" },
 ];
 
-/** Giọng nam — mặc định Decent_Boy (Thầy Ben, giọng trẻ rõ cho bé). */
+/** Giọng nam — mặc định Thầy Ben, giọng trẻ rõ cho bé. */
 export const NOVITA_VOICES_MALE: NovitaVoice[] = [
-  { id: "Decent_Boy", persona: "Thầy Ben", gender: "male", style: "giọng trẻ, rõ ràng" },
-  { id: "Casual_Guy", persona: "Thầy Jack", gender: "male", style: "thân thiện, tự nhiên" },
-  { id: "Patient_Man", persona: "Thầy Tom", gender: "male", style: "điềm đạm, kiên nhẫn" },
-  { id: "Deep_Voice_Man", persona: "Thầy David", gender: "male", style: "trầm ấm, vang" },
+  { id: "Decent_Boy", geminiId: "Puck", persona: "Thầy Ben", gender: "male", style: "giọng trẻ, rõ ràng" },
+  { id: "Casual_Guy", geminiId: "Fenrir", persona: "Thầy Jack", gender: "male", style: "thân thiện, tự nhiên" },
+  { id: "Patient_Man", geminiId: "Charon", persona: "Thầy Tom", gender: "male", style: "điềm đạm, kiên nhẫn" },
+  { id: "Deep_Voice_Man", geminiId: "Orus", persona: "Thầy David", gender: "male", style: "trầm ấm, vang" },
 ];
 
 export const NOVITA_VOICES: NovitaVoice[] = [...NOVITA_VOICES_FEMALE, ...NOVITA_VOICES_MALE];
@@ -58,8 +61,23 @@ export function hasNovitaKey(): boolean {
   return !!k && detectOwlyProvider(k).id === "novita";
 }
 
+export type CloudEngine = "novita" | "gemini";
+
+/** Engine giọng AI theo loại key đang lưu (Novita hoặc Gemini), null nếu không có. */
+export function cloudEngine(): CloudEngine | null {
+  const k = getOwlyKey();
+  if (!k) return null;
+  const id = detectOwlyProvider(k).id;
+  return id === "novita" || id === "gemini" ? id : null;
+}
+
+/** true khi có key dùng được cho giọng AI (Novita hoặc Gemini). */
+export function hasCloudVoiceKey(): boolean {
+  return cloudEngine() !== null;
+}
+
 // ── Trạng thái lần gọi TTS gần nhất (để UI báo đúng lý do) ──────────────────
-export type TtsStatus = "idle" | "ok" | "balance" | "auth" | "error";
+export type TtsStatus = "idle" | "ok" | "balance" | "auth" | "quota" | "error";
 let lastStatus: TtsStatus = "idle";
 const STATUS_EVENT = "owly-tts-status";
 export function getTtsStatus(): TtsStatus {
@@ -112,25 +130,32 @@ export function isCloudPlaying(): boolean {
 }
 
 /**
- * Đọc bằng giọng AI Novita. Trả true nếu phát được (hoặc đang tải để phát);
- * false nếu không có key Novita / lỗi — caller tự rơi về giọng máy.
- * onEnd được gọi khi đọc xong HOẶC khi lỗi sau lúc đã nhận phát.
+ * Đọc bằng giọng AI (Novita hoặc Gemini — theo loại key ba mẹ đã dán).
+ * Trả true nếu phát được; false nếu không có key phù hợp / lỗi — caller
+ * tự rơi về giọng máy. onEnd được gọi khi đọc xong hoặc lỗi sau khi phát.
+ * opts.voiceId là id nhân vật (Novita) — engine Gemini tự đổi sang
+ * voiceName tương ứng; tốc độ của Gemini áp bằng playbackRate khi phát.
  */
 export async function speakCloud(
   text: string,
   opts: { voiceId: string; speed: number; onEnd?: (() => void) | undefined },
 ): Promise<boolean> {
   const key = getOwlyKey();
-  if (!key || detectOwlyProvider(key).id !== "novita") return false;
+  const engine = cloudEngine();
+  if (!key || !engine) return false;
   const clean = text.trim();
   if (!clean) return false;
 
-  const cacheKey = `${opts.voiceId}|${opts.speed.toFixed(2)}|${clean}`;
+  const persona = novitaVoiceById(opts.voiceId);
+  const engineVoice = engine === "gemini" ? (persona?.geminiId ?? "Zephyr") : opts.voiceId;
+  const cacheKey = `${engine}|${engineVoice}|${opts.speed.toFixed(2)}|${clean}`;
   const el = getAudioEl();
   stopCloudSpeech();
 
   const play = (src: string) => {
     el.src = src;
+    // Gemini không chỉnh tốc độ phía server → áp tốc độ bằng playbackRate.
+    el.playbackRate = engine === "gemini" ? opts.speed : 1;
     el.onended = () => opts.onEnd?.();
     el.onerror = () => opts.onEnd?.();
     void el.play().catch(() => opts.onEnd?.());
@@ -150,7 +175,7 @@ export async function speakCloud(
       body: JSON.stringify({
         apiKey: key,
         text: clean.slice(0, 600),
-        voiceId: opts.voiceId,
+        voiceId: engineVoice,
         speed: opts.speed,
         lang: detectLang(clean),
       }),
@@ -162,7 +187,15 @@ export async function speakCloud(
       } catch {
         /* không phải JSON */
       }
-      setStatus(reason === "balance" ? "balance" : reason === "auth" ? "auth" : "error");
+      setStatus(
+        reason === "balance"
+          ? "balance"
+          : reason === "auth"
+            ? "auth"
+            : reason === "quota"
+              ? "quota"
+              : "error",
+      );
       return false;
     }
     const blob = await r.blob();

@@ -5,6 +5,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import { resolveConfig, callChat, validateKey, checkRateLimit } from "./api/_owly-proxy.js";
 import { callNovitaTts, isNovitaKey } from "./api/_tts-core.js";
+import { callGeminiTts, isGeminiKey } from "./api/_tts-gemini-core.js";
 
 /**
  * Vite plugin: proxy /api/ask-owly → LLM provider (dev).
@@ -36,11 +37,31 @@ function llmProxyPlugin(): Plugin {
             const chunks: Buffer[] = [];
             for await (const chunk of req) chunks.push(chunk as Buffer);
             const body = JSON.parse(Buffer.concat(chunks).toString());
+            if (isGeminiKey(body.apiKey)) {
+              const g = await callGeminiTts(String(body.apiKey).trim(), {
+                text: String(body.text || ""),
+                voice: body.voiceId,
+                lang: body.lang === "vi" ? "vi" : "en",
+              });
+              if (!g.ok) {
+                res.statusCode = g.reason === "quota" ? 429 : g.reason === "auth" ? 401 : 502;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: g.error, reason: g.reason }));
+                return;
+              }
+              res.statusCode = 200;
+              res.setHeader("Content-Type", "audio/wav");
+              res.end(g.audio);
+              return;
+            }
             if (!isNovitaKey(body.apiKey)) {
               res.statusCode = 400;
               res.setHeader("Content-Type", "application/json");
               res.end(
-                JSON.stringify({ error: "Giọng AI cần key Novita (sk_...).", reason: "bad-request" }),
+                JSON.stringify({
+                  error: "Giọng AI cần key Novita (sk_...) hoặc Gemini (AIza...).",
+                  reason: "bad-request",
+                }),
               );
               return;
             }

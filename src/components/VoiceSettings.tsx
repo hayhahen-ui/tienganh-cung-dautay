@@ -12,8 +12,9 @@ import {
 import {
   NOVITA_VOICES_FEMALE,
   NOVITA_VOICES_MALE,
+  cloudEngine,
   getTtsStatus,
-  hasNovitaKey,
+  hasCloudVoiceKey,
   onTtsStatusChange,
   type NovitaVoice,
 } from "@/lib/ttsCloud";
@@ -37,14 +38,18 @@ const speeds: { id: SpeechSpeed; label: string; emoji: string }[] = [
  */
 export function VoiceSettings({ compact = false }: { compact?: boolean }) {
   const [settings, setSettings] = useState<VoiceSettingsState>(() => getVoiceSettings());
-  const [novita, setNovita] = useState<boolean>(() => hasNovitaKey());
+  const [novita, setNovita] = useState<boolean>(() => hasCloudVoiceKey());
+  const [engine, setEngine] = useState(() => cloudEngine());
   const [ttsStatus, setTtsStatus] = useState(() => getTtsStatus());
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => onVoiceSettingsChange(() => setSettings(getVoiceSettings())), []);
   useEffect(() => onTtsStatusChange(() => setTtsStatus(getTtsStatus())), []);
   useEffect(() => {
-    const refresh = () => setNovita(hasNovitaKey());
+    const refresh = () => {
+      setNovita(hasCloudVoiceKey());
+      setEngine(cloudEngine());
+    };
     window.addEventListener("focus", refresh);
     window.addEventListener("storage", refresh);
     return () => {
@@ -134,7 +139,8 @@ export function VoiceSettings({ compact = false }: { compact?: boolean }) {
       {(!compact || pickerOpen) && novita && (
         <div className="rounded-2xl border-2 border-border bg-card p-3">
           <p className="text-xs font-bold text-muted-foreground">
-            🎙️ Chọn giọng AI (Novita — rõ nét trên điện thoại, có cả giọng nam):
+            🎙️ Chọn giọng AI ({engine === "gemini" ? "Gemini" : "Novita"} — rõ nét trên điện
+            thoại, có cả giọng nam):
           </p>
           {[
             { label: "👩 Giọng nữ", list: NOVITA_VOICES_FEMALE },
@@ -175,10 +181,21 @@ export function VoiceSettings({ compact = false }: { compact?: boolean }) {
               Ba mẹ nạp thêm credit tại novita.ai (mục Billing) rồi nghe thử lại nhé.
             </p>
           )}
+          {ttsStatus === "quota" && (
+            <p className="mt-2 text-xs font-bold text-destructive">
+              ⚠️ Gemini đang hết lượt TTS miễn phí — app tạm dùng giọng máy, ba mẹ thử lại sau ít
+              phút nhé.
+            </p>
+          )}
           {ttsStatus === "auth" && (
             <p className="mt-2 text-xs font-bold text-destructive">
-              ⚠️ Key Novita không hợp lệ — app đang dùng giọng máy. Ba mẹ kiểm tra lại key ở mục
-              "Hỏi cô Owly" nhé.
+              ⚠️ Key {engine === "gemini" ? "Gemini" : "Novita"} không hợp lệ — app đang dùng
+              giọng máy. Ba mẹ kiểm tra lại key ở mục "Hỏi cô Owly" nhé.
+            </p>
+          )}
+          {ttsStatus === "error" && (
+            <p className="mt-2 text-xs font-bold text-destructive">
+              ⚠️ Giọng AI đang lỗi — app tạm dùng giọng máy, ba mẹ thử lại sau nhé.
             </p>
           )}
           {ttsStatus === "ok" && (
@@ -191,8 +208,10 @@ export function VoiceSettings({ compact = false }: { compact?: boolean }) {
 
       {!compact && !novita && (
         <p className="px-1 text-xs text-muted-foreground">
-          ☁️ Muốn giọng đọc rõ nét và có giọng nam trên điện thoại? Dán <strong>key Novita</strong>{" "}
-          ở mục "Hỏi cô Owly" (nút ⚙️) — một key dùng cho cả chat AI và giọng đọc.
+          ☁️ Muốn giọng đọc rõ nét và có giọng nam THẬT trên điện thoại? Dán{" "}
+          <strong>key Gemini (miễn phí)</strong> hoặc <strong>key Novita</strong> ở mục "Hỏi cô
+          Owly" (nút ⚙️) — một key dùng cho cả chat AI và giọng đọc. Chưa có key thì app dùng
+          giọng của máy: nếu máy không có giọng nam, app tự hạ tông để tiếng Thầy trầm hẳn ra.
         </p>
       )}
     </div>

@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import {
   defaultNovitaVoice,
-  hasNovitaKey,
+  hasCloudVoiceKey,
   novitaVoiceById,
   speakCloud,
   stopCloudSpeech,
@@ -188,9 +188,9 @@ function qualityScore(v: SpeechSynthesisVoice): number {
 /** Danh sách voice tiếng Anh có sẵn, sắp xếp tốt nhất lên đầu. */
 export function getEnglishVoices(gender?: VoiceGender): SpeechSynthesisVoice[] {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return [];
-  const voices = window.speechSynthesis
-    .getVoices()
-    .filter((v) => v.lang.toLowerCase().replace("_", "-").startsWith("en"));
+  const voices = (voiceCache.length ? voiceCache : window.speechSynthesis.getVoices()).filter(
+    (v) => v.lang.toLowerCase().replace("_", "-").startsWith("en"),
+  );
   const scored = voices
     .map((v) => ({
       v,
@@ -203,19 +203,49 @@ export function getEnglishVoices(gender?: VoiceGender): SpeechSynthesisVoice[] {
   return (matched.length ? matched : scored).map((s) => s.v);
 }
 
-// Một số trình duyệt nạp voice bất đồng bộ — đảm bảo đã nạp trước khi chọn.
-let voicesReady = false;
-function ensureVoicesLoaded() {
+// Danh sách voice nạp bất đồng bộ (điện thoại Android nạp rất chậm) — cache
+// dùng chung + hàng đợi chờ. Nếu đọc ngay khi danh sách còn rỗng, trình duyệt
+// rớt về giọng mặc định (thường là NỮ) bất kể đã chọn Thầy hay Cô — đây là
+// một nguyên nhân thật của lỗi "chọn Thầy vẫn nghe giọng nữ".
+let voiceCache: SpeechSynthesisVoice[] = [];
+let voiceWaiters: (() => void)[] = [];
+let voiceWatchStarted = false;
+
+function refreshVoiceCache() {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  if (voicesReady) return;
   const list = window.speechSynthesis.getVoices();
   if (list.length > 0) {
-    voicesReady = true;
-    return;
+    voiceCache = list;
+    const waiters = voiceWaiters;
+    voiceWaiters = [];
+    waiters.forEach((fn) => fn());
   }
-  window.speechSynthesis.onvoiceschanged = () => {
-    voicesReady = true;
-  };
+}
+
+function ensureVoicesLoaded() {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  refreshVoiceCache();
+  if (!voiceWatchStarted) {
+    voiceWatchStarted = true;
+    window.speechSynthesis.addEventListener?.("voiceschanged", refreshVoiceCache);
+    window.speechSynthesis.onvoiceschanged = refreshVoiceCache;
+  }
+}
+
+/** Chờ danh sách voice tối đa `ms` (chỉ khi cache đang rỗng). */
+function waitForVoices(ms: number): Promise<void> {
+  if (voiceCache.length > 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (!done) {
+        done = true;
+        resolve();
+      }
+    };
+    voiceWaiters.push(finish);
+    setTimeout(finish, ms);
+  });
 }
 
 /** Giọng AI đang dùng theo cài đặt: voiceId cụ thể, hoặc mặc định theo gender. */
@@ -234,27 +264,22 @@ function cloudSpeed(
   return settings.speed === "slow" ? 0.85 : 1.0;
 }
 
-/** Đọc bằng giọng MÁY (Web Speech) — logic gốc, giữ nguyên hành vi. */
-function speakDevice(
-  text: string,
-  opts: {
-    slow?: boolean | undefined;
-    rate?: number | undefined;
-    onBoundary?: ((charIndex: number) => void) | undefined;
-    onEnd?: (() => void) | undefined;
-  },
-  settings: VoiceSettings,
-): boolean {
+type DeviceOpts = {
+  slow?: boolean | undefined;
+  rate?: number | undefined;
+  onBoundary?: ((charIndex: number) => void) | undefined;
+  onEnd?: (() => void) | undefined;
+};
+
+/** Đọc ngay bằng giọng máy với danh sách voice hiện có. */
+function speakDeviceNow(text: string, opts: DeviceOpts, settings: VoiceSettings): boolean {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return false;
-  ensureVoicesLoaded();
 
   const baseRate = settings.speed === "slow" ? 0.7 : 0.9;
   const rate = typeof opts.rate === "number" ? opts.rate : opts.slow ? 0.6 : baseRate;
 
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.rate = rate;
-  u.pitch = settings.gender === "male" ? 0.95 : 1.05;
 
   const pool = getEnglishVoices(settings.gender);
   const voice = pool[0];
@@ -264,6 +289,25 @@ function speakDevice(
   } else {
     u.lang = "en-GB";
   }
+
+  // Tông giọng: có giọng nam/nữ thật thì giữ tông tự nhiên; máy KHÔNG có
+  // giọng nam (rất phổ biến trên Android — chỉ 1 giọng nữ) thì HẠ TÔNG sâu
+  // (0.58) + chậm hơn một chút để tiếng "Thầy giáo" trầm hẳn, phân biệt rõ
+  // với giọng Cô thay vì 0.95 gần như không khác biệt như trước.
+  const guessed = voice ? guessGender(voice.name) : null;
+  if (settings.gender === "male") {
+    if (guessed === "male") {
+      u.pitch = 0.95;
+      u.rate = rate;
+    } else {
+      u.pitch = 0.58;
+      u.rate = rate * 0.94;
+    }
+  } else {
+    u.pitch = guessed === "female" ? 1.05 : 1.1;
+    u.rate = rate;
+  }
+
   if (opts.onBoundary) {
     u.onboundary = (e: SpeechSynthesisEvent) => opts.onBoundary!(e.charIndex);
   }
@@ -273,6 +317,21 @@ function speakDevice(
   }
   window.speechSynthesis.speak(u);
   return true;
+}
+
+/**
+ * Đọc bằng giọng MÁY (Web Speech). Nếu danh sách voice chưa nạp (lúc mới
+ * mở app trên điện thoại) thì chờ tối đa 800ms cho danh sách về rồi mới
+ * đọc — tránh rớt về giọng mặc định nữ khi bé đã chọn Thầy.
+ */
+function speakDevice(text: string, opts: DeviceOpts, settings: VoiceSettings): boolean {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return false;
+  ensureVoicesLoaded();
+  if (voiceCache.length === 0) {
+    void waitForVoices(800).then(() => speakDeviceNow(text, opts, settings));
+    return true;
+  }
+  return speakDeviceNow(text, opts, settings);
 }
 
 /**
@@ -297,7 +356,7 @@ export function speak(
   stopCloudSpeech();
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
 
-  if (!opts.onBoundary && hasNovitaKey()) {
+  if (!opts.onBoundary && hasCloudVoiceKey()) {
     const voice = activeCloudVoice(settings);
     void speakCloud(text, {
       voiceId: voice.id,
@@ -329,7 +388,7 @@ export function previewVoice(gender: VoiceGender, speed: SpeechSpeed, voiceId?: 
       ? `Hello! I am Miss ${firstName}. Let's learn English together!`
       : `Hello! I am Mister ${firstName}. Are you ready to learn English?`;
   stopSpeaking();
-  if (hasNovitaKey()) {
+  if (hasCloudVoiceKey()) {
     void speakCloud(sample, {
       voiceId: voice?.id ?? defaultNovitaVoice(gender).id,
       speed: speed === "slow" ? 0.85 : 1.0,

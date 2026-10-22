@@ -485,3 +485,40 @@ frontend CŨ nhận diện key Novita thành "DashScope" (chưa có nhánh sk_) 
 bản mới đã đúng; validate chỉ gọi /models (miễn phí) nên báo "kết nối
 thành công" dù tài khoản $0 — TTS thật vẫn cần credit, UI đã có cảnh báo
 riêng khi bấm nghe.
+
+## §U — Fix "điện thoại không có giọng nam" (22/10/2026)
+
+**Chẩn đoán (3 nguyên nhân thật):**
+1. Giọng máy lấy từ TTS của chính điện thoại — đa số Android chỉ cài 1
+   giọng nữ tiếng Anh → chọn "Thầy" cũng không có giọng nam để phát.
+2. Lỗi race trong `speech.ts`: danh sách voice nạp bất đồng bộ; đọc ngay
+   khi danh sách còn rỗng → rớt về giọng mặc định (nữ) bất kể đã chọn Thầy.
+3. Khi máy không có giọng nam, code cũ chỉ hạ pitch 0.95 → gần như không
+   khác giọng nữ.
+
+**Đã thử và LOẠI:** engine Edge TTS miễn phí (đúng engine Voice-Pro dùng).
+Bản cài thử bị Bing chặn 403 ngay ở bắt tay WebSocket: Microsoft đã đổi
+sang attestation v2 (Sec-MS-GEC v2 + hiệu chỉnh lệch giờ — thư viện
+edge-tts 7.3.1) — cơ chế họ chủ động xoay để chống dùng ngoài Edge, quá
+mong manh + xám về điều khoản cho app thương mại → không đưa vào
+production (đã xóa file thử nghiệm, không commit).
+
+**Fix đã ship:**
+- *Giọng máy (chạy ngay, không cần key):* cache danh sách voice toàn cục
+  + chờ tối đa 800ms cho danh sách nạp xong mới đọc (hết lỗi race);
+  máy không có giọng nam → hạ tông sâu 0.58 + chậm 0.94× cho tiếng Thầy
+  trầm hẳn, phân biệt rõ với giọng Cô.
+- *Thêm engine Gemini TTS (giọng nam/nữ THẬT, miễn phí theo key Gemini):*
+  `api/_tts-gemini-core.js` — POST generateContent của
+  gemini-2.5-flash-preview-tts, PCM 24kHz → bọc WAV ngay phía server;
+  `/api/tts` tự rẽ nhánh theo loại key (Novita sk_ → MiniMax HD;
+  Gemini AIza → Gemini TTS). 8 persona có thêm geminiId (Cô Emily=Zephyr,
+  Lily=Aoede, Anna=Kore, Mary=Leda; Thầy Ben=Puck, Jack=Fenrir,
+  Tom=Charon, David=Orus); tốc độ Gemini áp bằng playbackRate.
+  Unit test handler: WAV đúng header RIFF/24kHz, quota→429, key lạ→400.
+- UI: cảnh báo quota cho Gemini; gợi ý chưa có key ghi rõ cả 2 lựa chọn
+  key + giải thích cơ chế hạ tông của giọng máy.
+
+**Đường tới giọng nam thật cho user:** (a) nạp credit Novita (key đã lưu
+sẵn trong app), hoặc (b) dán key Gemini miễn phí — cả hai đều đã đấu nối
+xong; không cần thao tác thêm.
