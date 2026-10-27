@@ -2,6 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { TouchRead, type TouchLine } from "@/components/TouchRead";
 import { VoiceSettings } from "@/components/VoiceSettings";
+import {
+  deletePassage,
+  formatSavedDate,
+  loadSavedPassages,
+  savePassage,
+  type SavedPassage,
+} from "@/lib/savedPassages";
 
 export const Route = createFileRoute("/doc-cham")({
   head: () => ({
@@ -95,6 +102,22 @@ function TouchReadPage() {
   const [aiModel, setAiModel] = useState<"kimi" | "qwen">("kimi");
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
+  const [savedList, setSavedList] = useState<SavedPassage[]>(() => loadSavedPassages());
+  const [saveNote, setSaveNote] = useState("");
+
+  const saveCurrentPassage = () => {
+    const ok = savePassage({ title: activeTitle, lines: activeLines });
+    setSavedList(loadSavedPassages());
+    setSaveNote(ok ? "✅ Đã lưu vào thư viện!" : "📚 Bài này đã có trong thư viện rồi.");
+  };
+
+  const loadSaved = (p: SavedPassage) => {
+    setActiveLines(p.lines);
+    setActiveTitle(p.title);
+    setSaveNote("");
+    document.getElementById("touch-reader")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const [riverKey, setRiverKey] = useState(() => {
     try {
       return localStorage.getItem(RIVER_KEY_SLOT) || "";
@@ -148,6 +171,9 @@ function TouchReadPage() {
       }
       setActiveLines(data.lines as TouchLine[]);
       setActiveTitle(`🤖 ${t}`);
+      // Bài AI tạo ra tự lưu vào thư viện để bé đọc lại lần sau.
+      savePassage({ title: `🤖 ${t}`, lines: data.lines as TouchLine[], level: aiLevel, model: aiModel });
+      setSavedList(loadSavedPassages());
     } catch {
       setGenError("Không kết nối được máy chủ, thử lại nhé.");
     } finally {
@@ -285,6 +311,53 @@ function TouchReadPage() {
         </div>
       </div>
 
+      {/* Thư viện bài đã lưu — bé chọn là đọc lại ngay */}
+      <div className="mt-6 rounded-3xl border-2 border-border bg-card p-4">
+        <h2 className="font-display text-lg font-bold">📚 Bài đã lưu ({savedList.length})</h2>
+        {savedList.length === 0 ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Chưa có bài nào. Bài AI tạo ra sẽ tự lưu vào đây; bài mẫu hay bài dán tay thì
+            bấm "Lưu bài này" bên dưới bài đọc.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {savedList.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center gap-2 rounded-2xl border-2 border-border bg-background px-3 py-2"
+              >
+                <button
+                  type="button"
+                  onClick={() => loadSaved(p)}
+                  className="flex-1 text-left"
+                >
+                  <span className="block truncate text-sm font-bold">{p.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {p.lines.length} câu
+                    {p.level
+                      ? ` · ${p.level === "starters" ? "🌱 Starters" : p.level === "movers" ? "🌿 Movers" : "🌳 Flyers"}`
+                      : ""}
+                    {p.model ? ` · ${p.model === "kimi" ? "Kimi K3" : "Qwen 27B"}` : ""}
+                    {` · ${formatSavedDate(p.createdAt)}`}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Xóa bài ${p.title}`}
+                  onClick={() => {
+                    deletePassage(p.id);
+                    setSavedList(loadSavedPassages());
+                  }}
+                  className="rounded-full border-2 border-border px-2.5 py-1 text-sm font-bold"
+                >
+                  🗑️
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* Chọn bài mẫu */}
       <div className="mt-6 flex flex-wrap gap-2">
         {SAMPLES.map((s, i) => (
@@ -307,7 +380,18 @@ function TouchReadPage() {
         ))}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={saveCurrentPassage}
+          className="rounded-full bg-secondary px-4 py-2 text-sm font-bold text-secondary-foreground"
+        >
+          💾 Lưu bài này vào thư viện
+        </button>
+        {saveNote && <span className="text-sm font-semibold text-muted-foreground">{saveNote}</span>}
+      </div>
+
+      <div id="touch-reader" className="mt-4 scroll-mt-24">
         <TouchRead lines={activeLines} title={activeTitle} />
       </div>
 

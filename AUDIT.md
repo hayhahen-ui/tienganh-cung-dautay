@@ -562,3 +562,41 @@ môi trường của assistant (đo 2 lần: UNSET; các lỗi 401 khi test là 
 header Bearer rỗng; 1 lần 503 là gateway River timeout trước khi check
 auth) — key chỉ có trong môi trường Python của user, nên KHÔNG test live
 được bằng key thật; chờ user gắn key lên Vercel rồi test đầu cuối.
+
+## §X — Nhập key River ngay trên Đọc chạm (BYOK) (27/10/2026, commit a28f6fd)
+**Lý do:** gắn key qua Vercel chỉ tiện cho người làm kỹ thuật; ba mẹ
+dùng điện thoại cần nhập key ngay trong app như ô key của cô Owly.
+**Ship:** `api/ai-passage.js` nhận thêm `apiKey` theo từng request, ưu
+tiên key client trước, fallback biến Vercel RIVER_API_KEY; panel Đọc chạm
+thêm ô key River (slot localStorage RIÊNG `owly-river-key-v1` — không
+động vào ô key chung đang giữ key Novita cho chat/giọng đọc), hiện
+••••4 ký tự cuối + nút Xóa, chú thích quyền riêng tư như ô key cô Owly.
+**Kiểm chứng live 27/10:** GET /api/ai-passage -> configured:true
+(user đã tự gắn key lên Vercel + redeploy trong lúc build) — cả 2 model
+đều tạo bài thật qua key server (Kimi: bài "cat"; Qwen: bài "birthday"
+8 câu Movers). Panel BYOK đã lên Render (chunk chứa owly-river-key).
+
+## §Y — Fix "AI trả về bài chưa đúng định dạng" (27/10/2026, commit 893bf41)
+**Bệnh:** chủ đề tiếng Việt + Movers + Kimi K3 -> bad-format 3/3 lần
+(ảnh user 10:29: panel báo lỗi đỏ, bài cũ 43 từ vẫn hiển thị vì code cũ
+chỉ thay bài khi tạo thành công).
+**Nguyên nhân:** model đôi khi trả JSON kèm lời giải thích/khác tên key/
+gãy giữa chừng — parser cũ chỉ chịu JSON sạch nên rớt.
+**Fix trong `api/ai-passage.js`:** parser đa tầng (JSON sạch -> cắt đoạn
+{...}/[...] lớn nhất + khử dấu phẩy thừa -> salvage quét regex từng cặp
+en/vi, chịu cả key alias english/vietnamese/passage và vi đứng trước
+en); endpoint tự gọi lại model 1 lần khi parse rớt; prompt siết "JSON
+ONLY, không lời chào/giải thích kể cả khi chủ đề bằng tiếng Việt";
+max_tokens 1200 -> 1600; lỗi bad-format kèm rawPreview 300 ký tự đầu để
+chẩn đoán. Unit test parser 6/6 dạng (sạch, kèm text VI, phẩy thừa, cắt
+ngang, key khác, vi trước en).
+**Kiểm chứng live:** đúng tham số lỗi (chủ đề VI, Movers, Kimi) -> 2/2
+thành công (lần 1: 4 câu qua salvage, lần 2: 8 câu đủ chuẩn).
+
+## §Z — Thư viện bài đọc đã lưu (27/10/2026)
+**Ship:** `src/lib/savedPassages.ts` (localStorage
+`owly-saved-passages-v1`, tối đa 50 bài, chống trùng nội dung) + mục
+"📚 Bài đã lưu" trên /doc-cham: bài AI tạo ra TỰ ĐỘNG lưu; bài mẫu/dán
+tay bấm "💾 Lưu bài này"; bấm vào bài đã lưu -> nạp ngay vào khung đọc
+chạm + cuộn tới; nút 🗑️ xóa từng bài. Thư viện nằm trên từng máy (chưa
+đồng bộ cloud — bước tiếp theo nếu cần).
