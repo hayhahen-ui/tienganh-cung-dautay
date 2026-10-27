@@ -8,6 +8,7 @@ const items = [
   { to: "/", label: "Trang chủ" },
   { to: "/bai-hoc", label: "📚 Bài học" },
   { to: "/on-tap", label: "🧠 Ôn tập" },
+  { to: "/doc-cham", label: "👆 Đọc chạm" },
   { to: "/hoi-dap", label: "💬 Hỏi cô Owly" },
   { to: "/lo-trinh", label: "Lộ trình" },
   { to: "/giao-trinh", label: "Giáo trình" },

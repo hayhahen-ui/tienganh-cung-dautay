@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BaMeRouteImport } from './routes/ba-me'
 import { Route as DangNhapRouteImport } from './routes/dang-nhap'
+import { Route as DocChamRouteImport } from './routes/doc-cham'
 import { Route as GiaoTrinhRouteImport } from './routes/giao-trinh'
 import { Route as HoiDapRouteImport } from './routes/hoi-dap'
 import { Route as KiemTraRouteImport } from './routes/kiem-tra'
@@ -42,6 +43,11 @@ const BaMeRoute = BaMeRouteImport.update({
 const DangNhapRoute = DangNhapRouteImport.update({
   id: '/dang-nhap',
   path: '/dang-nhap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocChamRoute = DocChamRouteImport.update({
+  id: '/doc-cham',
+  path: '/doc-cham',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GiaoTrinhRoute = GiaoTrinhRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/ba-me': typeof BaMeRoute
   '/dang-nhap': typeof DangNhapRoute
+  '/doc-cham': typeof DocChamRoute
   '/giao-trinh': typeof GiaoTrinhRoute
   '/hoi-dap': typeof HoiDapRoute
   '/kiem-tra': typeof KiemTraRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/ba-me': typeof BaMeRoute
   '/dang-nhap': typeof DangNhapRoute
+  '/doc-cham': typeof DocChamRoute
   '/giao-trinh': typeof GiaoTrinhRoute
   '/hoi-dap': typeof HoiDapRoute
   '/kiem-tra': typeof KiemTraRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/ba-me': typeof BaMeRoute
   '/dang-nhap': typeof DangNhapRoute
+  '/doc-cham': typeof DocChamRoute
   '/giao-trinh': typeof GiaoTrinhRoute
   '/hoi-dap': typeof HoiDapRoute
   '/kiem-tra': typeof KiemTraRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ba-me'
     | '/dang-nhap'
+    | '/doc-cham'
     | '/giao-trinh'
     | '/hoi-dap'
     | '/kiem-tra'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ba-me'
     | '/dang-nhap'
+    | '/doc-cham'
     | '/giao-trinh'
     | '/hoi-dap'
     | '/kiem-tra'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ba-me'
     | '/dang-nhap'
+    | '/doc-cham'
     | '/giao-trinh'
     | '/hoi-dap'
     | '/kiem-tra'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   BaMeRoute: typeof BaMeRoute
   DangNhapRoute: typeof DangNhapRoute
+  DocChamRoute: typeof DocChamRoute
   GiaoTrinhRoute: typeof GiaoTrinhRoute
   HoiDapRoute: typeof HoiDapRoute
   KiemTraRoute: typeof KiemTraRoute
@@ -240,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/dang-nhap'
       fullPath: '/dang-nhap'
       preLoaderRoute: typeof DangNhapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/doc-cham': {
+      id: '/doc-cham'
+      path: '/doc-cham'
+      fullPath: '/doc-cham'
+      preLoaderRoute: typeof DocChamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/giao-trinh': {
@@ -320,6 +340,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   BaMeRoute: BaMeRoute,
   DangNhapRoute: DangNhapRoute,
+  DocChamRoute: DocChamRoute,
   GiaoTrinhRoute: GiaoTrinhRoute,
   HoiDapRoute: HoiDapRoute,
   KiemTraRoute: KiemTraRoute,
