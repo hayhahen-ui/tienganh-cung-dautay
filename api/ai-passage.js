@@ -4,12 +4,14 @@
  *
  * Dùng River AI (OpenAI-compatible, base https://api.river.ai/v1) với 2
  * model ba mẹ chọn: moonshotai/Kimi-K3 và Qwen/Qwen3.8-27B-FP8.
- * Key lấy từ biến môi trường Vercel RIVER_API_KEY (server-side, KHÔNG
- * nằm trong repo, KHÔNG gửi xuống trình duyệt). Chưa gắn key -> 503
- * reason "not-configured" để UI hướng dẫn ba mẹ gắn key.
+ * Key lấy theo thứ tự: (1) key ba mẹ nhập trong app, lưu ở localStorage
+ * máy bé, gửi kèm từng request (giống cơ chế key cô Owly — hàm này KHÔNG
+ * lưu, KHÔNG log key); (2) biến môi trường Vercel RIVER_API_KEY nếu có
+ * (đường dùng chung, tùy chọn). Không có key nào -> 503 reason
+ * "not-configured" để UI hướng dẫn nhập key.
  *
  * Đầu vào (POST JSON): { topic, level?: "starters"|"movers"|"flyers",
- *   model?: "kimi"|"qwen" }
+ *   model?: "kimi"|"qwen", apiKey?: string }
  * Đầu ra: { lines: [{ en, vi, scene }], model, level } — khớp đúng kiểu
  * TouchLine của component TouchRead (song ngữ từng câu + cảnh theo câu).
  */
@@ -88,6 +90,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       status: "ok",
       configured: Boolean(process.env.RIVER_API_KEY),
+      clientKeySupported: true,
       models: Object.values(MODELS),
       levels: Object.keys(LEVELS),
     });
@@ -111,10 +114,11 @@ export default async function handler(req, res) {
   const modelKey = MODELS[body.model] ? body.model : "kimi";
   const model = MODELS[modelKey];
 
-  const apiKey = process.env.RIVER_API_KEY;
+  const apiKey =
+    (typeof body.apiKey === "string" && body.apiKey.trim()) || process.env.RIVER_API_KEY;
   if (!apiKey) {
     return res.status(503).json({
-      error: "Chưa gắn key River AI trên Vercel (biến RIVER_API_KEY).",
+      error: "Chưa có key River AI — nhập key vào ô key trên trang Đọc chạm.",
       reason: "not-configured",
     });
   }

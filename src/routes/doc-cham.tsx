@@ -87,11 +87,44 @@ function TouchReadPage() {
   const [activeLines, setActiveLines] = useState<TouchLine[]>(SAMPLES[0]!.lines);
   const [activeTitle, setActiveTitle] = useState(SAMPLES[0]!.title);
   // AI tạo bài đọc (River AI: Kimi K3 / Qwen3.8-27B).
+  // Key River lưu RIÊNG (owly-river-key-v1) — không động vào ô key chung
+  // của cô Owly (đang giữ key Novita cho chat/giọng đọc).
+  const RIVER_KEY_SLOT = "owly-river-key-v1";
   const [topic, setTopic] = useState("");
   const [aiLevel, setAiLevel] = useState<"starters" | "movers" | "flyers">("starters");
   const [aiModel, setAiModel] = useState<"kimi" | "qwen">("kimi");
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
+  const [riverKey, setRiverKey] = useState(() => {
+    try {
+      return localStorage.getItem(RIVER_KEY_SLOT) || "";
+    } catch {
+      return "";
+    }
+  });
+  const [riverKeyInput, setRiverKeyInput] = useState("");
+
+  const saveRiverKey = () => {
+    const k = riverKeyInput.trim();
+    if (!k) return;
+    try {
+      localStorage.setItem(RIVER_KEY_SLOT, k);
+    } catch {
+      /* bộ nhớ trình duyệt bị chặn thì vẫn dùng key cho lần này */
+    }
+    setRiverKey(k);
+    setRiverKeyInput("");
+    setGenError("");
+  };
+
+  const clearRiverKey = () => {
+    try {
+      localStorage.removeItem(RIVER_KEY_SLOT);
+    } catch {
+      /* ignore */
+    }
+    setRiverKey("");
+  };
 
   const generatePassage = async () => {
     const t = topic.trim();
@@ -102,13 +135,13 @@ function TouchReadPage() {
       const r = await fetch(`${API_BASE}/api/ai-passage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: t, level: aiLevel, model: aiModel }),
+        body: JSON.stringify({ topic: t, level: aiLevel, model: aiModel, apiKey: riverKey || undefined }),
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) {
         setGenError(
           data?.reason === "not-configured"
-            ? "Chưa gắn key River AI trên Vercel. Ba mẹ làm 1 lần: Vercel → project tienganh-cung-dautay → Settings → Environment Variables → thêm RIVER_API_KEY → Redeploy."
+            ? "Chưa có key River — nhập key vào ô key bên dưới rồi bấm Tạo bài đọc lại."
             : (data?.error as string) || `Tạo bài thất bại (HTTP ${r.status}).`,
         );
         return;
@@ -203,6 +236,53 @@ function TouchReadPage() {
           </button>
         </div>
         {genError && <p className="mt-2 text-sm font-semibold text-red-600">{genError}</p>}
+
+        {/* Key River — nhập ngay trong app như ô key của cô Owly */}
+        <div className="mt-4 rounded-2xl border-2 border-dashed border-border bg-card p-3">
+          <p className="text-sm font-bold">🔑 Key River AI (để tạo bài đọc)</p>
+          {riverKey ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-800 dark:bg-green-900/40 dark:text-green-100">
+                ✅ Đã lưu key trên máy này (••••{riverKey.slice(-4)})
+              </span>
+              <button
+                type="button"
+                onClick={clearRiverKey}
+                className="rounded-full border-2 border-border px-3 py-1 text-sm font-bold"
+              >
+                🗑️ Xóa key
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <input
+                type="password"
+                value={riverKeyInput}
+                onChange={(e) => setRiverKeyInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveRiverKey();
+                }}
+                placeholder="Dán key River vào đây..."
+                autoComplete="off"
+                className="min-w-52 flex-1 rounded-full border-2 border-border bg-background px-4 py-1.5 text-sm outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                disabled={!riverKeyInput.trim()}
+                onClick={saveRiverKey}
+                className="rounded-full bg-secondary px-4 py-1.5 text-sm font-bold text-secondary-foreground disabled:opacity-40"
+              >
+                Lưu key
+              </button>
+            </div>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Key chỉ lưu trong trình duyệt của máy này, gửi kèm mỗi lần tạo bài qua máy chủ
+            trung gian (không lưu, không ghi log) — giống ô key của cô Owly. Lấy key tại
+            River Console (mục API Keys). Ai không có key riêng vẫn dùng được nếu app đã
+            gắn key chung trên Vercel.
+          </p>
+        </div>
       </div>
 
       {/* Chọn bài mẫu */}
