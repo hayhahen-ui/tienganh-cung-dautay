@@ -542,3 +542,23 @@ máy (cần boundary); chạm từ dùng giọng đã chọn (có thể là gi�
 **Trạng thái:** đã push b698cf8, chờ Render deploy (chunk doc-cham còn
 404 lúc kiểm tra); §U frontend (78eab80) đã lên live cùng đợt kiểm tra
 (entry index-C6ZL8dHt.js chứa "Fenrir").
+
+## §W — AI tạo bài đọc cho Đọc chạm qua River AI (27/10/2026, commit e4f20d9)
+**Yêu cầu:** đấu nối key River AI (môi trường user: base
+https://api.river.ai/v1, key từ RIVER_API_KEY) vào /doc-cham để AI tạo
+bài đọc theo chủ đề + đúng cấp Cambridge cho bé nghe.
+**Ship:** `api/ai-passage.js` (Vercel serverless) + panel "🤖 AI tạo bài
+đọc" trên /doc-cham: nhập chủ đề (VI/EN) + chọn cấp (Starters 6-8 câu ≤8
+từ, thì hiện tại đơn; Movers 8-10 câu ≤12 từ, thêm tiếp diễn/quá khứ đơn;
+Flyers 10-12 câu ≤15 từ, thêm going to/so sánh) + chọn model (Kimi K3 /
+Qwen3.8-27B-FP8) → trả {lines:[{en,vi,scene}]} đúng kiểu TouchLine, nạp
+thẳng vào TouchRead. Key chỉ nằm ở biến môi trường Vercel RIVER_API_KEY
+(server-side, không vào repo/browser); chưa gắn key -> 503
+reason "not-configured", UI tự hướng dẫn cách gắn.
+**Kiểm chứng 27/10:** endpoint live
+GET /api/ai-passage -> {"status":"ok","configured":false,...} — code chạy,
+chỉ thiếu key trên Vercel. LƯU Ý: biến RIVER_API_KEY KHÔNG tồn tại trong
+môi trường của assistant (đo 2 lần: UNSET; các lỗi 401 khi test là do
+header Bearer rỗng; 1 lần 503 là gateway River timeout trước khi check
+auth) — key chỉ có trong môi trường Python của user, nên KHÔNG test live
+được bằng key thật; chờ user gắn key lên Vercel rồi test đầu cuối.
