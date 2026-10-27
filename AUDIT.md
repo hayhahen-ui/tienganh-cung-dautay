@@ -522,3 +522,23 @@ production (đã xóa file thử nghiệm, không commit).
 **Đường tới giọng nam thật cho user:** (a) nạp credit Novita (key đã lưu
 sẵn trong app), hoặc (b) dán key Gemini miễn phí — cả hai đều đã đấu nối
 xong; không cần thao tác thêm.
+
+## §V — Đọc chạm song ngữ (27/10/2026, commit b698cf8)
+**Nguồn mẫu:** Reel "Book&Audio Language Club" user gửi (link share
+1A1mAfmPqC → reel 1565279418617757) + video tải về user gửi lại.
+Cơ chế xem được từ video: mỗi câu 2 dòng (VI nhỏ mờ trên, EN đậm dưới);
+giọng đọc liên tục từng câu, từ đang đọc tô nền XANH LÁ chạy theo nhịp
+giọng (ngón tay chỉ theo từng từ); tranh minh họa đổi cảnh theo nội dung
+câu; văn bản tự cuộn theo giọng; cuối bài tổng kết từ vựng. (Bài mẫu trong
+app là đoạn do app tự viết + tự dịch, KHÔNG lấy nguyên văn video.)
+**Ship:** route `/doc-cham` (link "👆 Đọc chạm" trong SiteNav) +
+component `TouchRead`: 3 bài mẫu song ngữ (My Weekend có cảnh theo câu;
+A Day at School; My Family Picnic) + ô dán đoạn văn riêng (tự tách câu).
+Chế độ "▶ Đọc từ đây" (mặc định): chạm từ → đọc liền mạch từ đó đến hết
+bài, 1 utterance + boundary → highlight xanh; chạm từ khác → nhảy ngay;
+chạm lại từ đang đọc → dừng. Chế độ "🔤 Chạm từ": đọc riêng từ + thẻ
+nghĩa (tra yleDictionary, có số ít/số nhiều). Đọc liền mạch dùng giọng
+máy (cần boundary); chạm từ dùng giọng đã chọn (có thể là giọng AI).
+**Trạng thái:** đã push b698cf8, chờ Render deploy (chunk doc-cham còn
+404 lúc kiểm tra); §U frontend (78eab80) đã lên live cùng đợt kiểm tra
+(entry index-C6ZL8dHt.js chứa "Fenrir").
