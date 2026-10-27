@@ -78,11 +78,49 @@ function splitSentences(text: string): TouchLine[] {
     .map((en) => ({ en }));
 }
 
+const API_BASE =
+  (import.meta.env as Record<string, string | undefined>)["VITE_OWLY_API_URL"] || "";
+
 function TouchReadPage() {
   const [sampleIdx, setSampleIdx] = useState(0);
   const [custom, setCustom] = useState("");
   const [activeLines, setActiveLines] = useState<TouchLine[]>(SAMPLES[0]!.lines);
   const [activeTitle, setActiveTitle] = useState(SAMPLES[0]!.title);
+  // AI tạo bài đọc (River AI: Kimi K3 / Qwen3.8-27B).
+  const [topic, setTopic] = useState("");
+  const [aiLevel, setAiLevel] = useState<"starters" | "movers" | "flyers">("starters");
+  const [aiModel, setAiModel] = useState<"kimi" | "qwen">("kimi");
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState("");
+
+  const generatePassage = async () => {
+    const t = topic.trim();
+    if (!t || generating) return;
+    setGenerating(true);
+    setGenError("");
+    try {
+      const r = await fetch(`${API_BASE}/api/ai-passage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: t, level: aiLevel, model: aiModel }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setGenError(
+          data?.reason === "not-configured"
+            ? "Chưa gắn key River AI trên Vercel. Ba mẹ làm 1 lần: Vercel → project tienganh-cung-dautay → Settings → Environment Variables → thêm RIVER_API_KEY → Redeploy."
+            : (data?.error as string) || `Tạo bài thất bại (HTTP ${r.status}).`,
+        );
+        return;
+      }
+      setActiveLines(data.lines as TouchLine[]);
+      setActiveTitle(`🤖 ${t}`);
+    } catch {
+      setGenError("Không kết nối được máy chủ, thử lại nhé.");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -96,6 +134,75 @@ function TouchReadPage() {
 
       <div className="mt-4">
         <VoiceSettings />
+      </div>
+
+      {/* AI tạo bài đọc theo chủ đề + cấp Cambridge */}
+      <div className="mt-6 rounded-3xl border-2 border-primary/40 bg-primary/5 p-4">
+        <h2 className="font-display text-lg font-bold">🤖 AI tạo bài đọc cho bé</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Nhập chủ đề bé thích (tiếng Việt hay tiếng Anh đều được), chọn cấp Cambridge và
+          model AI — AI sẽ viết 1 bài đọc song ngữ đúng trình độ, bé chạm vào đâu cũng đọc
+          được như bài mẫu.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void generatePassage();
+            }}
+            placeholder="VD: chú mèo, đi biển, sinh nhật..."
+            className="min-w-52 flex-1 rounded-full border-2 border-border bg-background px-4 py-2 text-base outline-none focus:border-primary"
+          />
+          <div className="flex rounded-full border-2 border-border bg-card">
+            {(
+              [
+                { id: "starters", label: "🌱 Starters" },
+                { id: "movers", label: "🌿 Movers" },
+                { id: "flyers", label: "🌳 Flyers" },
+              ] as const
+            ).map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => setAiLevel(l.id)}
+                className={`rounded-full px-3 py-1.5 text-sm font-bold ${
+                  aiLevel === l.id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex rounded-full border-2 border-border bg-card">
+            {(
+              [
+                { id: "kimi", label: "Kimi K3" },
+                { id: "qwen", label: "Qwen 27B" },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setAiModel(m.id)}
+                className={`rounded-full px-3 py-1.5 text-sm font-bold ${
+                  aiModel === m.id ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            disabled={!topic.trim() || generating}
+            onClick={() => void generatePassage()}
+            className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-40"
+          >
+            {generating ? "✍️ Đang viết bài..." : "Tạo bài đọc"}
+          </button>
+        </div>
+        {genError && <p className="mt-2 text-sm font-semibold text-red-600">{genError}</p>}
       </div>
 
       {/* Chọn bài mẫu */}
